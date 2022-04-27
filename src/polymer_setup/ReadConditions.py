@@ -38,44 +38,25 @@ def makenewudf():
 			Cores: int "計算に使用するコア数を指定"
 			} "計算の条件を設定"
 		TargetCond:{
-			Model:{TargetModel:select{"Regular", "Random"} "ネットワークのモデルを選択",
-				Regular:{chains:select{"3_Chain_S", "3_Chain_D", "4_Chain", "6_Chain", "8_Chain"} "分岐の数と種類を選択"
-					} "規則構造での条件を入力",
-				Random:{chains:select{"3_Chain", "4_Chain", "5_Chain", "6_Chain", "7_Chain"} "分岐の数と種類を選択",
-					Calc_Topolpgy:select{"Calc", "Read"} "ランダムネットワークの「計算を行うか、読み込むか」を選択",
-						Calc:{pre_sampling:int "プレサンプリング数", 
-						sampling:int "サンプリング数", 
-						try:int "サンプリング時の再トライ数", 
-						repeat:int "探索計算の繰り返し数"
-						n_parallel:int "並行計算のCPU数"} "ランダムサーチ計算する場合の条件を設定",
-						Read:{dir_name:string} "過去の計算結果のディレクトリを記入",
-					histgram_bins:int "ヒストグラムの分割数"
-					} "ランダム構造での条件を入力"
+			Model:{TargetModel:select{"Homo", "Blend"} "対象となるポリマーのモデルを選択",
+				Homo:{N_Segments: int "ポリマー中のセグメント数", 
+					M_Chains: int "ポリマーの本数"
+					} "条件を入力",
+				Blend:{NA_Segments: int "ポリマー中のセグメント数", 
+					MA_Chains: int "ポリマーの本数",
+					NB_Segments: int "ポリマー中のセグメント数", 
+					MB_Chains: int "ポリマーの本数",
+					epsilon_AB: float "相互作用パラメタ",
+					} "条件を入力"
 				} "シミュレーションの条件を設定"
-			NetWork:{N_Segments: int "ストランド中のセグメント数", 
-					N_Subchain: int "各セグメントの側鎖の数", 
-					N_UnitCells: int "一辺あたりのユニットセルの数"
-				} "ネットワークの条件を設定"
-			Multiplisity:{Set_or_Calc:select{"Set", "Calc"} "多重度を設定するかどうかのフラッグ",
-					Set:{Multiplicity: int} "多重度を設定",
-					Calc:{TargetDensity:float} "多重度を自動設定した場合の密度を設定 \\n設定した密度になるように多重度を設定"
-				} "多重度設定に関する設定"
-			Shrinkage:{Shrink:select{"Yes", "No"} "ストランドを自然長から圧縮するかどうかのフラッグ \\n非圧縮時には、多重度に応じて密度が変化",
-				Yes:{Control:select{"Density", "Shrink"} "圧縮する場合に、密度コントロールにするか、圧縮率を決めるかを設定", 
-				Density:{target_density: float} "目標とする密度を設定", 
-				Shrinkage:{value: float} "ストランドの圧縮比率を設定"
-				}
-				} "ストランドを自然長から圧縮するかどうかを設定"
-			Entanglement:{
-				Type:select{"Entangled", "NO_Entangled"} "ネットワーク・トポロジーを選択",
-					Entangled:{Step_rfc[]: float "Slow Push Off での rfc 条件",
-						Time:{delta_T: double, Total_Steps: int, Output_Interval_Steps: int} "時間条件を入力"} "密度、末端間距離を設定値に合わせるように多重度を自動設定。\\n絡み合いが入るように初期化",
-					NO_Entangled:{
-						ExpansionRatio: float "NPT 計算での初期膨張率", 
-						StepPress[]: float "NPT 計算での圧力変化",
+			Initialize:{
+				Type:select{"SlowPO", "Random"} "初期化条件を選択",
+					SlowPO:{Step_rfc[]: float "Slow Push Off での rfc 条件",
+						Time:{delta_T: double, Total_Steps: int, Output_Interval_Steps: int} "時間条件を入力",
+					Random:{
 						Time:{delta_T: double, Total_Steps: int, Output_Interval_Steps: int} "時間条件を入力"
-						} "密度、末端間距離を設定値に合わせるように多重度を自動設定。\\n絡み合いが入らないようにNPTで縮める。"
-				} "ネットワーク・トポロジーを選択",
+						} "ttt"
+				} "uuu",
 			} "計算ターゲットの条件を設定"
 		SimulationCond:{
 			Equilib_Condition:{
@@ -96,11 +77,8 @@ def makenewudf():
 	\\begin{data}
 		CalcCond:{"cognac112",1}
 TargetCond:{
-	{"Regular", {"4_Chain"}{"4_Chain","Read",{1000,100,100,10,1}{"4_chains_3_cells_100_trials_100_sampling"}100}}
-	{20, 0, 3}
-	{"Set", {1}{0.85}}
-	{"No", {"Density", {0.85}{1.0}}}
-	{"NO_Entangled",
+	{"Homo", {20, 50}{20, 50, 20, 50, 1}
+	{"SlowPO",
 		{[1.073,1.0,0.9,0.8], {1.0e-02,300000,2000}},
 		{2.0, [0.2,0.5,1.0,2.0,3.0,4.5], {1.0e-02,300000,2000}}
 		}
