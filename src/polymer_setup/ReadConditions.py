@@ -9,7 +9,7 @@ from UDFManager import UDFManager
 #######################################################
 #
 def setupcondition():
-	# check 'calc_condition.udf' and make it.
+	# check 'polymer_condition.udf' and make it.
 	findudf()
 	# Read udf and setup initial conditions.
 	basic_cond, nw_cond, sim_cond, sim_cond2, rnd_cond, target_cond, target_dir = read_and_setcondition()
@@ -17,11 +17,11 @@ def setupcondition():
 	return basic_cond, nw_cond, sim_cond, sim_cond2, rnd_cond, target_cond, target_dir
 	
 ###########################################
-# check 'calc_condition.udf' and make it.
+# check 'polymer_condition.udf' and make it.
 def findudf():
-	if not os.path.isfile('./calc_condition.udf'):
+	if not os.path.isfile('./polymer_condition.udf'):
 		print()
-		print('In this directory, no "calc_condition.udf" is found !')
+		print('In this directory, no "polymer_condition.udf" is found !')
 		print('New one will be generated.')
 		print('Please, modify and save it !\n')
 		makenewudf()
@@ -76,8 +76,9 @@ def makenewudf():
 
 	\\begin{data}
 		CalcCond:{"cognac112",1}
-TargetCond:{
-	{"Homo", {20, 50}{20, 50, 20, 50, 1}
+		TargetCond:{
+		{"Homo", {20, 50}{20, 50, 20, 50, 1}}
+		}
 	{"SlowPO",
 		{[1.073,1.0,0.9,0.8], {1.0e-02,300000,2000}},
 		{2.0, [0.2,0.5,1.0,2.0,3.0,4.5], {1.0e-02,300000,2000}}
@@ -92,7 +93,7 @@ SimulationCond:{
 \end{data}
 	'''
 	###
-	with codecs.open('./calc_condition.udf', 'w', 'utf_8') as f:
+	with codecs.open('./polymer_condition.udf', 'w', 'utf_8') as f:
 		f.write(contents)
 	return
 
@@ -124,7 +125,7 @@ def read_and_setcondition():
 ####################################
 # Read condition udf
 def readconditionudf():
-	u = UDFManager('calc_condition.udf')
+	u = UDFManager('polymer_condition.udf')
 	u.jump(-1)
 	##################
 	# 使用するCognacのバージョン
