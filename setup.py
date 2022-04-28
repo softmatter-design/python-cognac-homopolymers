@@ -18,8 +18,7 @@ setup(
     entry_points={
         "console_scripts": [
           'polymer_setup = polymer_setup.setup:main',
-          'evaluate_poly = chain_evaluation.evaluate_all:evaluate',
-          'evaluate_poly2 = chain_evaluation.evaluate_all2:evaluate'
+          'evaluate_polymer = chain_evaluation.evaluate_all2:evaluate'
         ]
     }
 )
