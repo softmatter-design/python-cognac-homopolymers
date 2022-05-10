@@ -36,11 +36,11 @@ def findudf():
 def makenewudf():
 	contents = '''
 	\\begin{def}
-		CalcCond:{
+		CalcConditions:{
 			Cognac_ver:select{"cognac112"} "使用する Cognac のバージョン",
 			Cores: int "計算に使用するコア数を指定"
-			} "計算の条件を設定"
-		TargetCond:{
+			} "Cognac による計算の条件を設定"
+		Target:{
 			Model:{TargetModel:select{"Homo", "Blend"} "対象となるポリマーのモデルを選択",
 				Homo:{N_Segments: int "ポリマー中のセグメント数", 
 					M_Chains: int "ポリマーの本数"
@@ -52,6 +52,9 @@ def makenewudf():
 					epsilon_AB: float "相互作用パラメタ",
 					} "条件を入力"
 				} "シミュレーションの条件を設定"
+			} "計算ターゲットの条件を設定"
+		
+		PreTreatment:{
 			Initialize:{
 				Type:select{"SlowPO", "Harmonic"} "初期化条件を選択",
 					SlowPO:{
@@ -59,16 +62,41 @@ def makenewudf():
 						Time:{delta_T: double, Total_Steps: int, Output_Interval_Steps: int} "時間条件を入力",
 						}
 					Harmonic:{
-						HarmonicBond_K:float "計算の繰り返し数",
+						HarmonicBond_K:float "HarmoncBond のばね定数",
 						Time:{delta_T: double, Total_Steps: int, Output_Interval_Steps: int} "時間条件を入力"
 						} 
-				} "uuu",
-			} "計算ターゲットの条件を設定"
-		SimulationCond:{
+				} "",
 			Setup_KG:{
 					Repeat: int "計算の繰り返し数",
 					Time:{delta_T: double, Total_Steps: int, Output_Interval_Steps: int} "時間条件を入力"
-				} "計算の時間条件を入力",
+				} "KG Polymer の時間条件を入力",
+			} "前処理条件を設定"
+		
+		Relaxation:{
+			LAOS:{
+				Calc:select{"Yes", "No"},
+				Yes:{
+					Repeat:int "計算の繰り返し数",
+					N_LAOS:int "LAOS の繰り返し数",
+					LAOS_Amp:float "LAOS の歪み",
+					LAOS_Freq:float "LAOS の周波数"
+					} "LAOS により緩和"
+				},
+			HeatCycle:{
+				Calc:select{"Yes", "No"},
+				Yes:{
+					Repeat:int "計算の繰り返し数",
+					Temperature:float "昇温温度を設定",
+					Time:{delta_T: double, Total_Steps: int, Output_Interval_Steps: int} "時間条件を入力"
+					} "昇温により緩和"
+				},
+			Final_Relaxation:{
+					Time:{delta_T: double, Total_Steps: int, Output_Interval_Steps: int} "時間条件を入力"
+					} "緩和の時間条件"
+			} "緩和条件を設定"
+		
+		SimulationCond:{
+			
 			Equilib_Condition:{
 					Repeat: int "平衡化計算の繰り返し数",
 					Time:{delta_T: double, Total_Steps: int, Output_Interval_Steps: int} "平衡化計算の時間条件を入力"
@@ -83,22 +111,30 @@ def makenewudf():
 			} "シミュレーションの条件を設定"
 	\end{def}
 
-	\\begin{data}
-		CalcCond:{"cognac112",1}
-		TargetCond:{
-		{"Homo", {20, 50}{20, 50, 20, 50, 1.}}
-	{"SlowPO",
-		{[1.073,1.0,0.9,0.8], {1.0e-02,1000000,5000}},
-		{1000., {1.0e-02,100000,1000}}
-		}
-	}
-SimulationCond:{
-	{2,{1.0e-02,100000,1000}}
-	{4,{1.0e-02,1000000,10000}}
-	{"Yes",{5,{1.0e-02,1000000,10000}}}
-	}
 
-\end{data}
+	\\begin{data}
+	CalcConditions:{"cognac112",1}
+	Target:{
+		{"Homo", {20, 50}{20, 50, 20, 50, 1.}}
+	}
+	
+	PreTreatment:{
+		{"SlowPO",
+			{[1.073,1.0,0.9,0.8], {1.0e-02,1000000,5000}},
+			{1000., {1.0e-02,100000,1000}}
+		}
+		{1,{1.0e-02,100000,1000}}
+	}
+	Relaxation:{
+	{"Yes",{2,3,1.0,0.001}}
+	{"Yes",{2,2.0,{1.0e-02,1000000,10000}}}
+	{{1.0e-02,100000,1000}}
+	}
+	SimulationCond:{
+		{4,{1.0e-02,1000000,10000}}
+		{"Yes",{5,{1.0e-02,1000000,10000}}}
+	}
+	\end{data}
 	'''
 	###
 	with codecs.open('./polymer_condition.udf', 'w', 'utf_8') as f:
@@ -137,9 +173,9 @@ def readconditionudf():
 	u.jump(-1)
 	##################
 	# 使用するCognacのバージョン
-	val.ver_cognac = u.get('CalcCond.Cognac_ver')
+	val.ver_cognac = u.get('CalcConditions.Cognac_ver')
 	# 計算に使用するコア数
-	val.core = u.get('CalcCond.Cores')
+	val.core = u.get('CalcConditions.Cores')
 	# ベースとするUDFの名前
 	val.base_udf = "base_uin.udf"
 	val.blank_udf = val.ver_cognac + '.udf'
@@ -147,28 +183,44 @@ def readconditionudf():
 	## 計算ターゲット
 	###################
 	## Polymerモデルの設定
-	val.model = u.get('TargetCond.Model.TargetModel')
+	val.model = u.get('Target.Model.TargetModel')
 	if val.model == "Homo":
-		val.na_segments = u.get('TargetCond.Model.Homo.N_Segments')
-		val.ma_polymers = u.get('TargetCond.Model.Homo.M_Chains')
+		val.na_segments = u.get('Target.Model.Homo.N_Segments')
+		val.ma_polymers = u.get('Target.Model.Homo.M_Chains')
 	elif val.model == "Blend":
-		val.na_segments = u.get('TargetCond.Model.Blend.NA_Segments')
-		val.ma_polymers = u.get('TargetCond.Model.Blend.MA_Chains')
-		val.nb_segments = u.get('TargetCond.Model.Blend.NB_Segments')
-		val.mb_polymers = u.get('TargetCond.Model.Blend.MB_Chains')
-		val.epsilon = u.get('TargetCond.Model.Blend.epsilon_AB')
+		val.na_segments = u.get('Target.Model.Blend.NA_Segments')
+		val.ma_polymers = u.get('Target.Model.Blend.MA_Chains')
+		val.nb_segments = u.get('Target.Model.Blend.NB_Segments')
+		val.mb_polymers = u.get('Target.Model.Blend.MB_Chains')
+		val.epsilon = u.get('Target.Model.Blend.epsilon_AB')
 	# 
-	val.initialize = u.get('TargetCond.Initialize.Type')
+	val.initialize = u.get('PreTreatment.Initialize.Type')
 	if val.initialize == 'SlowPO':
-		val.step_rfc = u.get('TargetCond.Initialize.SlowPO.Step_rfc[]')
-		val.step_rfc_time = u.get('TargetCond.Initialize.SlowPO.Time')
+		val.step_rfc = u.get('PreTreatment.Initialize.SlowPO.Step_rfc[]')
+		val.step_rfc_time = u.get('PreTreatment.Initialize.SlowPO.Time')
 	elif val.initialize == 'Harmonic':
-		val.harmonicK = u.get('TargetCond.Initialize.Harmonic.HarmonicBond_K')
-		val.harmonic_time = u.get('TargetCond.Initialize.Harmonic.Time')
-	# シミュレーションの条件
-	val.kg_repeat = u.get('SimulationCond.Setup_KG.Repeat')
-	val.kg_time = u.get('SimulationCond.Setup_KG.Time')
+		val.harmonicK = u.get('PreTreatment.Initialize.Harmonic.HarmonicBond_K')
+		val.harmonic_time = u.get('PreTreatment.Initialize.Harmonic.Time')
 	#
+	val.kg_repeat = u.get('PreTreatment.Setup_KG.Repeat')
+	val.kg_time = u.get('PreTreatment.Setup_KG.Time')
+	# 
+	val.laos = u.get('Relaxation.LAOS.Calc')
+	if val.laos == 'Yes':
+		val.laos_repeat = u.get('Relaxation.LAOS.Yes.Repeat')
+		val.laos_n = u.get('Relaxation.LAOS.Yes.N_LAOS')
+		val.laos_amp =  u.get('Relaxation.LAOS.Yes.LAOS_Amp')
+		val.laos_freq =  u.get('Relaxation.LAOS.Yes.LAOS_Freq')
+		val.laos_time = [val.laos_period, int(val.laos_n/val.laos_freq/val.laos_period), int(1/val.laos_freq/val.laos_period/100)]
+	#
+	val.heat = u.get('Relaxation.HeatCycle.Calc')
+	if val.heat == 'Yes':
+		val.heat_repeat = u.get('Relaxation.HeatCycle.Yes.Repeat')
+		val.heat_temp = u.get('Relaxation.HeatCycle.Yes.Temperature')
+		val.heat_time = u.get('Relaxation.HeatCycle.Yes.Time')
+	#
+	val.final_time = u.get('Relaxation.Final_Relaxation.Time')
+	# シミュレーションの条件
 	val.equilib_repeat = u.get('SimulationCond.Equilib_Condition.Repeat')
 	val.equilib_time = u.get('SimulationCond.Equilib_Condition.Time')
 	#
@@ -225,12 +277,32 @@ def init_calc():
 	else:
 		text += "ばね定数:\t\t\t\t" + str(val.harmonicK) + "\n"
 		text += "時間条件:\t\t" + str(val.harmonic_time) + "\n"
-	text += "################################################" + "\n"
+	text += "##\n"
 	text += "KG初期化計算繰り返し:\t\t\t" + str(val.kg_repeat) + "\n"
 	text += "KG初期化時間条件:\t" + str(val.kg_time) + "\n"
+	if val.laos == 'Yes':
+		text += "################################################" + "\n"
+		text += "緩和条件:\n"
+		text += "LAOS 操作の繰り返し:\t\t\t" + str(val.laos_repeat) + "\n"
+		text += "LAOS 回数:\t\t\t\t" + str(val.laos_n) + "\n"
+		text += "最大ひずみ:\t\t\t\t" + str(val.laos_amp) + "\n"
+		text += "周波数:\t\t\t\t\t" + str(val.laos_freq) + "\n"
+		text += "LAOS 計算の時間条件:\t" + str(val.laos_time) + "\n"
+	if val.laos == 'No' and val.heat == 'Yes':
+		text += "################################################" + "\n"
+		text += "緩和条件:\n"
+	if val.heat == 'Yes':
+		text += "##\n"
+		text += "昇温緩和の繰り返し:\t\t\t" + str(val.heat_repeat) + "\n"
+		text += "昇温緩和の温度:\t\t\t\t" + str(val.heat_temp) + "\n"
+		text += "昇温緩和の時間条件:\t" + str(val.heat_time) + "\n"
+	text += "##\n"
+	text += "最終緩和の時間条件:\t" + str(val.final_time) + "\n"
+	text += "################################################" + "\n"
 	text += "平衡化計算繰り返し:\t\t\t" + str(val.equilib_repeat) + "\n"
 	text += "平衡化時間条件:\t\t" + str(val.equilib_time ) + "\n"
 	if val.greenkubo == 'Yes':
+		text += "##\n"
 		text += "応力緩和計算繰り返し:\t\t\t" + str(val.greenkubo_repeat) + "\n"
 		text += "応力緩和時間条件:\t" + str(val.greenkubo_time) + "\n"
 	text += "################################################" + "\n"

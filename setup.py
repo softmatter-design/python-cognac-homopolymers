@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='homopolymer-setup',
-    version='0.1.0',
+    version='0.1.1',
     license='proprietary',
     description='Module Experiment',
 

@@ -74,7 +74,7 @@ def make_base():
 	#--- Initial_Structure ---
 	# Initial_Unit_Cell
 	p = 'Initial_Structure.Initial_Unit_Cell.'
-	val.uobj.put(val.target_density, p + 'Density')
+	val.uobj.put(val.density, p + 'Density')
 	val.uobj.put([0, 0, 0, 90.0, 90.0, 90.0], p + 'Cell_Size')
 	
 	#--- Molecular_Attributes ---

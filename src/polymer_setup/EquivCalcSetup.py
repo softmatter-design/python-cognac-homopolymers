@@ -10,82 +10,94 @@ from UDFManager import UDFManager
 import polymer_setup.values as val
 ##########################################
 # UDF の作成
-##########################################
-class SetUpUDF:
-	def __init__(self, basic_cond, sim_cond, sim_cond2, target_dir):
-		self.ver_cognac = basic_cond[0]
-		self.base_udf = basic_cond[2]
-		self.core = ' -n ' + str(basic_cond[3])
-		# 
-		self.entanglement = sim_cond[0]
-		self.step_press = sim_cond[5]
-		self.press_time = sim_cond[6]
-		self.rfc = sim_cond[7]
-		self.rfc_time = sim_cond[8]
-		self.equilib_repeat = sim_cond[9]
-		self.equilib_time = sim_cond[10]
-		self.greenkubo = sim_cond[11]
-		self.greenkubo_repeat = sim_cond[12]
-		self.greenkubo_time = sim_cond[13]
+# ##########################################
+# class SetUpUDF:
+# 	def __init__(self, basic_cond, sim_cond, sim_cond2, target_dir):
+# 		self.ver_cognac = basic_cond[0]
+# 		self.base_udf = basic_cond[2]
+# 		self.core = ' -n ' + str(basic_cond[3])
+# 		# 
+# 		self.entanglement = sim_cond[0]
+# 		self.step_press = sim_cond[5]
+# 		self.press_time = sim_cond[6]
+# 		self.rfc = sim_cond[7]
+# 		self.rfc_time = sim_cond[8]
+# 		self.equilib_repeat = sim_cond[9]
+# 		self.equilib_time = sim_cond[10]
+# 		self.greenkubo = sim_cond[11]
+# 		self.greenkubo_repeat = sim_cond[12]
+# 		self.greenkubo_time = sim_cond[13]
 
-		self.density = sim_cond2[1]
-		#
-		self.target_dir = target_dir
+# 		self.density = sim_cond2[1]
+# 		#
+# 		self.target_dir = target_dir
 
 		
-		# Cognac用の名称設定
-		self.nw_name = "Network"
-		self.atom_name = ["JP_A", "End_A", "Strand_A", "Side_A", "Solvent"]
-		self.bond_name = ["bond_JP-Chn", "bond_Strand", "bond_Side"]
-		self.angle_name = ["angle_AAA"]
-		self.site_name = ["site_JP", "site_End", "site_Strand", "site_Solvent"]
-		self.pair_name = ["site_JP-site_JP", "site_Strand-site_JP", "site_Strand-site_Strand", 
-						"site_JP-site_End", "site_Strand-site_End", "site_End-site_End",
-						"site_Solvent-site_Solvent", "site_Solvent-site_JP", "site_Solvent-site_End",
-						"site_Solvent-site_Strand"]
-		self.site_pair_name = [ 
-						["site_JP", "site_JP"], 
-						["site_Strand", "site_JP"], 
-						["site_Strand", "site_Strand"],
-						["site_JP", "site_End"], 
-						["site_Strand", "site_End"], 
-						["site_End", "site_End"],
-						["site_Solvent", "site_Solvent"],
-						["site_Solvent", "site_JP"],
-						["site_Solvent", "site_End"],
-						["site_Solvent", "site_Strand"],
-						]
+
+# 		# Cognac用の名称設定
+# 		self.nw_name = "Network"
+# 		self.atom_name = ["JP_A", "End_A", "Strand_A", "Side_A", "Solvent"]
+# 		self.bond_name = ["bond_JP-Chn", "bond_Strand", "bond_Side"]
+# 		self.angle_name = ["angle_AAA"]
+# 		self.site_name = ["site_JP", "site_End", "site_Strand", "site_Solvent"]
+# 		self.pair_name = ["site_JP-site_JP", "site_Strand-site_JP", "site_Strand-site_Strand", 
+# 						"site_JP-site_End", "site_Strand-site_End", "site_End-site_End",
+# 						"site_Solvent-site_Solvent", "site_Solvent-site_JP", "site_Solvent-site_End",
+# 						"site_Solvent-site_Strand"]
+# 		self.site_pair_name = [ 
+# 						["site_JP", "site_JP"], 
+# 						["site_Strand", "site_JP"], 
+# 						["site_Strand", "site_Strand"],
+# 						["site_JP", "site_End"], 
+# 						["site_Strand", "site_End"], 
+# 						["site_End", "site_End"],
+# 						["site_Solvent", "site_Solvent"],
+# 						["site_Solvent", "site_JP"],
+# 						["site_Solvent", "site_End"],
+# 						["site_Solvent", "site_Strand"],
+# 						]
 
 
 
 					
 ####################################
 # UDFファイルを設定し、バッチ処理を作成
-def setup_udf(self):
+def setup_udf():
+	#
+	pre_batch()
+	#
+	setup_all()
+	# バッチファイルを作成
+	write_batch()
+	return
+
+def pre_batch():
 	if platform.system() == "Windows":
 		val.batch = ""
 	elif platform.system() == "Linux":
 		val.batch = "#!/bin/bash\n"
-	# initialize に応じて計算条件を選択
-	if val.initialize == "SlowPO":
-		val.batch = slowpo_calc()
-	else:
-		val.batch = simple_calc()
-	# バッチファイルを作成
+	return
+
+def write_batch():
 	f_batch = os.path.join(val.target_name, '_Calc_all.bat')
 	with open(f_batch, 'w') as f:
 		f.write(val.batch)
-		if platform.system() == "Linux":
-			os.chmod(f_batch, 0o777)
+	if platform.system() == "Linux":
+		os.chmod(f_batch, 0o777)
+
+# ターミナルのタイトルを設定
+def make_title(title):
+	if platform.system() == "Windows":
+		val.batch += "title " + title + "\n"
+	elif platform.system() == "Linux":
+		val.batch += r'echo -ne "\033]0; ' + title + ' \007"' + '\n'
 	return
 
-
-
 # ファイル名の処理
-def make_step(fn_ext, f_eval):
-	val.present_udf = fn_ext[0] + fn_ext[1]
+def make_step(file_name, f_eval):
+	val.present_udf = file_name
 	out_udf = val.present_udf.replace("uin", "out")
-	val.batch += val.ver_cognac + ' -I ' + val.present_udf + ' -O ' + out_udf + val.core + ' \n'
+	val.batch += val.ver_cognac + ' -I ' + val.present_udf + ' -O ' + out_udf + str(val.core) + ' \n'
 	if f_eval:
 		val.batch += val.f_eval_py + ' ' + out_udf + '\n'
 	val.read_udf = out_udf
@@ -94,64 +106,65 @@ def make_step(fn_ext, f_eval):
 ######################
 # 各種バッチ条件を設定
 ######################
+def setup_all():
+	# initialize に応じて計算条件を選択
+	if val.initialize == "SlowPO":
+		slowpo_calc()
+	else:
+		simple_calc()
+	return
 ######################################################################
 # ホモポリマーのKG鎖の計算
-def slowpo_calc(batch):
+def slowpo_calc():
 	# Force Capped LJ によりステップワイズに初期化
-	r = 0.9558*2**(1/6)
-	make_title("Calculating-Init")
-	fn_ext = ['Init_', 'uin.udf']
-	time = [0.001, 1000000, 10000]
-	f_eval = 1
-	make_step(fn_ext, f_eval)
-	self.step_nonbond_setup(self.base_udf, 'random', present_udf, time, r)
-	pre = read_udf
-	template = present_udf
-	#
-	for r in [1.0, 0.9, 0.8]:
-		# 平衡化
-		batch = self.make_title(batch, "Calculating-Pre_" + str(round(r, 3)).replace('.', '_'))
-		fn_ext = ['Pre_rfc_' + str(round(r, 3)).replace('.', '_') + "_", "uin.udf"]
-		time = [0.01, 5000000, 50000]
+	for count, val.rfc in enumerate(val.step_rfc):
+		title = "Calculating-Pre_SlowPushOff_r_" + str(round(val.rfc, 3)).replace('.', '_')
+		make_title(title)
+
+		file_name = 'Pre_rfc_' + str(round(val.rfc, 3)).replace('.', '_') + "_uin.udf"
 		f_eval = 1
-		present_udf, read_udf, batch = self.make_step(fn_ext, batch, f_eval)
-		self.step_nonbond_setup(template, pre, present_udf, time, r)
-		pre = read_udf
-		template = present_udf
-	# KG 鎖に設定
-	time = [0.01, 10000000, 100000]
-	batch = self.make_title(batch, "Calculating-KG")
-	fn_ext = ['KG_', "uin.udf"]
-	f_eval = 1
-	present_udf, read_udf, batch = self.make_step(fn_ext, batch, f_eval)
-	self.kg_setup(template, pre, present_udf, time)
-	pre = read_udf
-	template = present_udf
-	# 平衡化計算
-	repeat = 4
-	time = [0.01, 2000000, 5000]
-	for i in range(repeat):
-		# 平衡化
-		batch = self.make_title(batch, "Calculating-Eq_" + str(i))
-		fn_ext = ['Eq_' + str(i) + "_", "uin.udf"]
-		f_eval = 1
-		present_udf, read_udf, batch = self.make_step(fn_ext, batch, f_eval)
-		self.eq_setup(template, pre, present_udf, time)
-		pre = read_udf
-		template = present_udf
-	# グリーン久保
-	repeat = 5
-	time = [0.01, 20000000, 100000]
-	for i in range(repeat):
-		# 平衡化
-		batch = self.make_title(batch, "Calculating-GK_" + str(i))
-		fn_ext = ['GK_' + str(i) + "_", "uin.udf"]
-		f_eval = 1
-		present_udf, read_udf, batch = self.make_step(fn_ext, batch, f_eval)
-		self.greenkubo_setup(template, pre, present_udf, time)
-		pre = read_udf
-		template = present_udf
-	return batch
+		make_step(file_name, f_eval)
+
+		if count == 0:
+			val.read_udf = ''
+		slowpushoff_setup()
+		val.template = val.present_udf
+
+
+	# # KG 鎖に設定
+	# time = [0.01, 10000000, 100000]
+	# batch = self.make_title(batch, "Calculating-KG")
+	# fn_ext = ['KG_', "uin.udf"]
+	# f_eval = 1
+	# present_udf, read_udf, batch = self.make_step(fn_ext, batch, f_eval)
+	# self.kg_setup(template, pre, present_udf, time)
+	# pre = read_udf
+	# template = present_udf
+	# # 平衡化計算
+	# repeat = 4
+	# time = [0.01, 2000000, 5000]
+	# for i in range(repeat):
+	# 	# 平衡化
+	# 	batch = self.make_title(batch, "Calculating-Eq_" + str(i))
+	# 	fn_ext = ['Eq_' + str(i) + "_", "uin.udf"]
+	# 	f_eval = 1
+	# 	present_udf, read_udf, batch = self.make_step(fn_ext, batch, f_eval)
+	# 	self.eq_setup(template, pre, present_udf, time)
+	# 	pre = read_udf
+	# 	template = present_udf
+	# # グリーン久保
+	# repeat = 5
+	# time = [0.01, 20000000, 100000]
+	# for i in range(repeat):
+	# 	# 平衡化
+	# 	batch = self.make_title(batch, "Calculating-GK_" + str(i))
+	# 	fn_ext = ['GK_' + str(i) + "_", "uin.udf"]
+	# 	f_eval = 1
+	# 	present_udf, read_udf, batch = self.make_step(fn_ext, batch, f_eval)
+	# 	self.greenkubo_setup(template, pre, present_udf, time)
+	# 	pre = read_udf
+	# 	template = present_udf
+	return
 
 ######################################################################
 # KG鎖の計算
@@ -278,24 +291,24 @@ def npt_calc(self, batch):
 ###############
 ##############################################################################
 # ユーザーポテンシャルにより、Force Capped LJ で、ステップワイズにノンボンドを増加
-def step_nonbond_setup(self, template, read_udf, present_udf, time, r_fc):
-	u = UDFManager(os.path.join(self.target_dir, template))
+def slowpushoff_setup():
+	u = UDFManager(os.path.join(val.target_name, val.base_udf))
 	# goto global data
 	u.jump(-1)
 	#--- Simulation_Conditions ---
 	# Dynamics_Conditions
 	p = 'Simulation_Conditions.Dynamics_Conditions.'
 	u.put(100000000., 	p + 'Max_Force')
-	u.put(time[0], 		p + 'Time.delta_T')
-	u.put(time[1], 		p + 'Time.Total_Steps')
-	u.put(time[2], 		p + 'Time.Output_Interval_Steps')
-	u.put(1.0, 			p + 'Temperature.Temperature')
-	u.put(0., 			p + 'Pressure_Stress.Pressure')
+	u.put(val.step_rfc_time[0], p + 'Time.delta_T')
+	u.put(val.step_rfc_time[1], p + 'Time.Total_Steps')
+	u.put(val.step_rfc_time[2], p + 'Time.Output_Interval_Steps')
+	u.put(1.0, 					p + 'Temperature.Temperature')
+	u.put(0., 					p + 'Pressure_Stress.Pressure')
 	# Calc_Potential_Flags
 	p = 'Simulation_Conditions.Calc_Potential_Flags.'
 	u.put(1, p + 'Bond')
 	u.put(1, p + 'Angle')
-	if read_udf == 'random':
+	if val.read_udf == '':
 		u.put(0, p + 'Non_Bonding_Interchain')
 		u.put(0, p + 'Non_Bonding_1_3')
 		u.put(0, p + 'Non_Bonding_1_4')
@@ -308,24 +321,14 @@ def step_nonbond_setup(self, template, read_udf, present_udf, time, r_fc):
 	#--- Initial_Structure ---
 	# Initial_Unit_Cell
 	p = 'Initial_Structure.Initial_Unit_Cell.'
-	u.put(self.density, p + 'Density')
+	u.put(val.density, p + 'Density')
 	u.put([0, 0, 0, 90.0, 90.0, 90.0], p + 'Cell_Size')
 	# Generate_Method
-	if read_udf == 'random':
+	if val.read_udf == '':
 		# Set atoms
 		p = 'Initial_Structure.Generate_Method.'
 		u.put('Random', p + 'Method')
-		u.put(1, p + 'Random.Fix_Angle')
-		# Relaxation
-		p = 'Initial_Structure.Relaxation.'
-		u.put(1, p + 'Relaxation')
-		u.put('DYNAMICS', p + 'Method')
-		u.put(100, p + 'Max_Relax_Force')
-		u.put(100000, p + 'Max_Relax_Steps')
-	elif read_udf == '':
-		p = 'Initial_Structure.Generate_Method.'
-		u.put('Restart', p+'Method')
-		u.put(['', -1, 0, 0], p+'Restart')
+		u.put('Fix', p + 'Random.Angle.Constraint')
 		# Relaxation
 		p = 'Initial_Structure.Relaxation.'
 		u.put(1, p + 'Relaxation')
@@ -335,16 +338,16 @@ def step_nonbond_setup(self, template, read_udf, present_udf, time, r_fc):
 	else:
 		p = 'Initial_Structure.Generate_Method.'
 		u.put('Restart', p+'Method')
-		u.put([read_udf, -1, 1, 0], p+'Restart')
+		u.put([val.read_udf, -1, 1, 0], p+'Restart')
 		# Relaxation
 		p = 'Initial_Structure.Relaxation.'
-		u.put(0, p + 'Relaxation')
+		u.put(1, p + 'Relaxation')
 	#--- Simulation_Conditions ---
 	# bond
-	for i, b_name in enumerate(self.bond_name):
+	for i, b_name in enumerate(val.bond_name):
 		p = 'Molecular_Attributes.Bond_Potential[].'
 		u.put(b_name, 		p + 'Name', [i])
-		if read_udf == '':
+		if val.read_udf == '':
 			u.put('Harmonic', 	p + 'Potential_Type', [i])
 			u.put(0.97,			p + 'R0', [i])
 			u.put(1000, 		p + 'Harmonic.K', [i])
@@ -358,7 +361,7 @@ def step_nonbond_setup(self, template, read_udf, present_udf, time, r_fc):
 			u.put(9685.31,	p + 'Bond_Polynomial.p[]', [i, 3])
 			u.put('YES',			p + 'Bond_Polynomial.Use_Equilibrated_Value', [i])
 	# Angle
-	for i, anglename in enumerate(self.angle_name):
+	for i, anglename in enumerate(val.angle_name):
 		p = 'Molecular_Attributes.Angle_Potential[].'
 		u.put(anglename, 		p + 'Name', [i])
 		u.put('Force_Cap_LJ', 	p + 'Potential_Type', [i])
@@ -368,19 +371,19 @@ def step_nonbond_setup(self, template, read_udf, present_udf, time, r_fc):
 		u.put(1.122462, 		p + 'Force_Cap_LJ.cutoff', [i])
 		u.put(0.8, 			p + 'Force_Cap_LJ.r_FC', [i])
 	#--- Pair_Interaction[] ---
-	for i, pairname in enumerate(self.pair_name):
+	for i, pairname in enumerate(val.pair_name):
 		p = 'Interactions.Pair_Interaction[].'
-		u.put(pairname,   					p + 'Name', [i])
-		u.put('Force_Cap_LJ', 		p + 'Potential_Type', [i])
-		u.put(self.site_pair_name[i][0],	p + 'Site1_Name', [i])
-		u.put(self.site_pair_name[i][1],	p + 'Site2_Name', [i])
-		u.put(1.12246204830937,				p + 'Cutoff', [i])
-		u.put(1.0,							p + 'Scale_1_4_Pair', [i])
-		u.put(1.0,							p + 'Force_Cap_LJ.sigma', [i])
-		u.put(1.0,							p + 'Force_Cap_LJ.epsilon', [i])
-		u.put(r_fc,							p + 'Force_Cap_LJ.r_FC', [i])
+		u.put(pairname,   				p + 'Name', [i])
+		u.put('Force_Cap_LJ', 			p + 'Potential_Type', [i])
+		u.put(val.site_pair_name[i][0],	p + 'Site1_Name', [i])
+		u.put(val.site_pair_name[i][1],	p + 'Site2_Name', [i])
+		u.put(1.12246204830937,			p + 'Cutoff', [i])
+		u.put(1.0,						p + 'Scale_1_4_Pair', [i])
+		u.put(1.0,						p + 'Force_Cap_LJ.sigma', [i])
+		u.put(1.0,						p + 'Force_Cap_LJ.epsilon', [i])
+		u.put(val.rfc,						p + 'Force_Cap_LJ.r_FC', [i])
 	#--- Write UDF ---
-	u.write(os.path.join(self.target_dir, present_udf))
+	u.write(os.path.join(val.target_name, val.present_udf))
 	return
 
 ###############################################
@@ -649,10 +652,3 @@ def greenkubo_setup(self, template, read_udf, present_udf, time):
 
 
 #####################################################################################
-# ターミナルのタイトルを設定
-def make_title(title):
-	if platform.system() == "Windows":
-		val.batch += "title " + title + "\n"
-	elif platform.system() == "Linux":
-		val.batch += r'echo -ne "\033]0; ' + title + ' \007"' + '\n'
-	return
