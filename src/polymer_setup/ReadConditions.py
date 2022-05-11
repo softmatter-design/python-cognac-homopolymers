@@ -86,7 +86,7 @@ def makenewudf():
 				Calc:select{"Yes", "No"},
 				Yes:{
 					Repeat:int "計算の繰り返し数",
-					Temperature:float "昇温温度を設定",
+					Temperature[]:float "昇温温度を設定",
 					Time:{delta_T: double, Total_Steps: int, Output_Interval_Steps: int} "時間条件を入力"
 					} "昇温により緩和"
 				},
@@ -127,7 +127,7 @@ def makenewudf():
 	}
 	Relaxation:{
 	{"Yes",{2,3,1.0,0.001}}
-	{"Yes",{2,2.0,{1.0e-02,1000000,10000}}}
+	{"Yes",{2,[2.0, 1.5, 1.0],{1.0e-02,1000000,10000}}}
 	{{1.0e-02,100000,1000}}
 	}
 	SimulationCond:{
@@ -216,7 +216,7 @@ def readconditionudf():
 	val.heat = u.get('Relaxation.HeatCycle.Calc')
 	if val.heat == 'Yes':
 		val.heat_repeat = u.get('Relaxation.HeatCycle.Yes.Repeat')
-		val.heat_temp = u.get('Relaxation.HeatCycle.Yes.Temperature')
+		val.heat_temp = u.get('Relaxation.HeatCycle.Yes.Temperature[]')
 		val.heat_time = u.get('Relaxation.HeatCycle.Yes.Time')
 	#
 	val.final_time = u.get('Relaxation.Final_Relaxation.Time')
@@ -294,7 +294,7 @@ def init_calc():
 	if val.heat == 'Yes':
 		text += "##\n"
 		text += "昇温緩和の繰り返し:\t\t\t" + str(val.heat_repeat) + "\n"
-		text += "昇温緩和の温度:\t\t\t\t" + str(val.heat_temp) + "\n"
+		text += "昇温緩和の温度条件:\t\t" + str(val.heat_temp) + "\n"
 		text += "昇温緩和の時間条件:\t" + str(val.heat_time) + "\n"
 	text += "##\n"
 	text += "最終緩和の時間条件:\t" + str(val.final_time) + "\n"
@@ -316,5 +316,21 @@ def make_dir():
 		val.target_name = val.model + '_NA_' + str(val.na_segments) + "_" + val.initialize
 	else:
 		val.target_name = val.model + '_NA_' + str(val.na_segments) + '_NB_' + str(val.nb_segments) + '_epsilon_' + str(val.epsilon).replace('.', '_') + "_" + val.initialize
-	os.makedirs(val.target_name, exist_ok = True)
+	if val.laos == 'Yes':
+		val.target_name += '_wLAOS'
+	if val.heat == 'Yes':
+		val.target_name += '_wHeat'
+
+	if os.path.exists(val.target_name):
+		print('\nTarget Dir of ', val.target_name, 'exists !!')
+		print('\nQuit: type [q]uit')
+		inp = input('Overwrite ==> [y]es >> ').lower()
+		if inp in ['q','quit']:
+			sys.exit('bye')
+		else:
+			print("Overwrite ", val.target_name)
+			os.makedirs(val.target_name, exist_ok=True)
+	else:
+		print("\nMake new dir of ", val.target_name)
+		os.makedirs(val.target_name)
 	return

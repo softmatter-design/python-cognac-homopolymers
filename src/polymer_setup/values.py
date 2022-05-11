@@ -63,9 +63,16 @@ angle = ['Theta2', 74, 10.0]
 lj_cond = [2**(1/6), 1.0, 1.0, 1.0, 1.0]
 
 batch = ''
-template = ''
-present_udf = ''
-read_udf = ''
+title = ''
+file_name = ''
+f_eval = 0
 f_eval_py = 'evaluate_polymer'
 
+template = ''
+present_udf = ''
+out_udf = ''
+read_udf = ''
+
 rfc = 0.
+
+temp = 1.
