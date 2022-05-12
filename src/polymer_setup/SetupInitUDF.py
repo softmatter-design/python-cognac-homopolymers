@@ -169,7 +169,6 @@ def setup_atoms():
 		for n_mol in range(val.ma_polymers, val.mb_polymers + val.ma_polymers):
 			val.uobj.put(val.mol_name[1], p + 'Mol_Name', [n_mol])
 			# beads
-			atom_id = 0
 			for n_atom in range(val.nb_segments):
 				# atom
 				val.uobj.put(atom_id, 			pa + 'Atom_ID', [n_mol, n_atom])
@@ -199,7 +198,6 @@ def setup_atoms():
 				val.uobj.put(atom1 + 2, 		pang + 'atom3', [n_mol, n_ang])
 				atom1 += 1
 	
-
 		# Draw_Attributes
 		# color = ["Red", "Green", "Blue", "Magenta", "Cyan", "Yellow", "White", "Black", "Gray"]
 		# mm = mul % 9

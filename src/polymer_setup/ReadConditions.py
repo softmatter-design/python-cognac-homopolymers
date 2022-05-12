@@ -49,7 +49,7 @@ def makenewudf():
 					MA_Chains: int "ポリマーの本数",
 					NB_Segments: int "ポリマー中のセグメント数", 
 					MB_Chains: int "ポリマーの本数",
-					epsilon_AB: float "相互作用パラメタ",
+					delta_epsilon_AB: float "相互作用パラメタの差",
 					} "条件を入力"
 				} "シミュレーションの条件を設定"
 			} "計算ターゲットの条件を設定"
@@ -58,40 +58,45 @@ def makenewudf():
 			Initialize:{
 				Type:select{"SlowPO", "Harmonic"} "初期化条件を選択",
 					SlowPO:{
-						Step_rfc[]: float "Slow Push Off での rfc 条件",
+						spo_r[]: float "Slow Push Off での rfc 条件",
 						Time:{delta_T: double, Total_Steps: int, Output_Interval_Steps: int} "時間条件を入力",
+						Evaluate:select{"Yes", "No"}"評価を行うかどうかのフラッグ"
 						}
 					Harmonic:{
 						HarmonicBond_K:float "HarmoncBond のばね定数",
-						Time:{delta_T: double, Total_Steps: int, Output_Interval_Steps: int} "時間条件を入力"
+						Time:{delta_T: double, Total_Steps: int, Output_Interval_Steps: int} "時間条件を入力",
+						Evaluate:select{"Yes", "No"}"評価を行うかどうかのフラッグ"
 						} 
 				} "",
 			Setup_KG:{
 					Repeat: int "計算の繰り返し数",
-					Time:{delta_T: double, Total_Steps: int, Output_Interval_Steps: int} "時間条件を入力"
+					Time:{delta_T: double, Total_Steps: int, Output_Interval_Steps: int} "時間条件を入力",
+					Evaluate:select{"Yes", "No"}"評価を行うかどうかのフラッグ"
 				} "KG Polymer の時間条件を入力",
-			} "前処理条件を設定"
+			} "初期化条件を設定"
 		
 		Relaxation:{
 			LAOS:{
-				Calc:select{"Yes", "No"},
-				Yes:{
-					Repeat:int "計算の繰り返し数",
-					N_LAOS:int "LAOS の繰り返し数",
+				LAOS:select{"Calc", "No"},
+				Calc:{
+					Cycles:int "LAOS の繰り返し数",
 					LAOS_Amp:float "LAOS の歪み",
-					LAOS_Freq:float "LAOS の周波数"
+					LAOS_Freq:float "LAOS の周波数",
+					Evaluate:select{"Yes", "No"}"評価を行うかどうかのフラッグ"
 					} "LAOS により緩和"
 				},
 			HeatCycle:{
-				Calc:select{"Yes", "No"},
-				Yes:{
+				HeatCycle:select{"Calc", "No"},
+				Calc:{
 					Repeat:int "計算の繰り返し数",
 					Temperature[]:float "昇温温度を設定",
-					Time:{delta_T: double, Total_Steps: int, Output_Interval_Steps: int} "時間条件を入力"
+					Time:{delta_T: double, Total_Steps: int, Output_Interval_Steps: int} "時間条件を入力",
+					Evaluate:select{"Yes", "No"}"評価を行うかどうかのフラッグ"
 					} "昇温により緩和"
 				},
 			Final_Relaxation:{
-					Time:{delta_T: double, Total_Steps: int, Output_Interval_Steps: int} "時間条件を入力"
+					Time:{delta_T: double, Total_Steps: int, Output_Interval_Steps: int} "時間条件を入力",
+					Evaluate:select{"Yes", "No"}"評価を行うかどうかのフラッグ"
 					} "緩和の時間条件"
 			} "緩和条件を設定"
 		
@@ -99,13 +104,15 @@ def makenewudf():
 			
 			Equilib_Condition:{
 					Repeat: int "平衡化計算の繰り返し数",
-					Time:{delta_T: double, Total_Steps: int, Output_Interval_Steps: int} "平衡化計算の時間条件を入力"
+					Time:{delta_T: double, Total_Steps: int, Output_Interval_Steps: int} "平衡化計算の時間条件を入力",
+					Evaluate:select{"Yes", "No"}"評価を行うかどうかのフラッグ"
 				} "平衡化計算の時間条件を入力",
 			GreenKubo:{
-				Calc:select{"Yes", "No"},
-				Yes:{
+				GreenKubo:select{"Calc", "No"},
+				Calc:{
 					Repeat:int "計算の繰り返し数",
-					Time:{delta_T: double, Total_Steps: int, Output_Interval_Steps: int} "時間条件を入力"
+					Time:{delta_T: double, Total_Steps: int, Output_Interval_Steps: int} "時間条件を入力",
+					Evaluate:select{"Yes", "No"}"評価を行うかどうかのフラッグ"
 					} "GreenKubo により、応力緩和関数を計算するかどうかを決める。"
 				}
 			} "シミュレーションの条件を設定"
@@ -115,24 +122,24 @@ def makenewudf():
 	\\begin{data}
 	CalcConditions:{"cognac112",1}
 	Target:{
-		{"Homo", {20, 50}{20, 50, 20, 50, 1.}}
+		{"Homo", {20, 50}{20, 50, 20, 50, 0.1}}
 	}
 	
 	PreTreatment:{
 		{"SlowPO",
-			{[1.073,1.0,0.9,0.8], {1.0e-02,1000000,5000}},
-			{1000., {1.0e-02,100000,1000}}
+			{[1.073,1.0,0.9,0.8], {1.0e-02,1000000,5000},"Yes"},
+			{1000., {1.0e-02,100000,1000},"Yes"}
 		}
-		{1,{1.0e-02,100000,1000}}
+		{1,{1.0e-02,100000,1000},"Yes"}
 	}
 	Relaxation:{
-	{"Yes",{2,3,1.0,0.001}}
-	{"Yes",{2,[2.0, 1.5, 1.0],{1.0e-02,1000000,10000}}}
-	{{1.0e-02,100000,1000}}
+	{"Calc",{10,2.0,0.001,"Yes"}}
+	{"Calc",{2,[2.0, 1.5, 1.0],{1.0e-02,1000000,10000},"Yes"}}
+	{{1.0e-02,100000,1000},"Yes"}
 	}
 	SimulationCond:{
-		{4,{1.0e-02,1000000,10000}}
-		{"Yes",{5,{1.0e-02,1000000,10000}}}
+		{4,{1.0e-02,1000000,10000},"Yes"}
+		{"Calc",{5,{1.0e-02,1000000,10000},"Yes"}}
 	}
 	\end{data}
 	'''
@@ -158,13 +165,37 @@ def read_and_setcondition():
 			break
 		print('##### \nRead Condition UDF again \n#####\n\n')
 	if inp:
-		print("\n\nSetting UP progress !!")
 		# 計算用のディレクトリーを作成
 		make_dir()
-
+		print("\n\nSetting UP progress !!")
 		return
 	else:
 		sys.exit("##### \nQuit !!")
+###################################
+# 計算用のディレクトリーを作成
+def make_dir():
+	if val.model == "Homo":
+		val.target_name = val.model + '_NA_' + str(val.na_segments) + '_MA_' + str(val.ma_polymers) + "_" + val.initialize
+	else:
+		val.target_name = val.model + '_NA_' + str(val.na_segments) + '_MA_' + str(val.ma_polymers) + '_NB_' + str(val.nb_segments) + '_MB_' + str(val.mb_polymers) + '_epsilon_' + str(val.epsilon).replace('.', '_') + "_" + val.initialize
+	if val.laos == 'Calc':
+		val.target_name += '_wLAOS'
+	if val.heat == 'Calc':
+		val.target_name += '_wHeat'
+
+	if os.path.exists(val.target_name):
+		print('\n\nTarget Dir of ', val.target_name, 'exists !!')
+		print('\nQuit: type [q]uit')
+		inp = input('Overwrite ==> [y]es >> ').lower()
+		if inp in ['q','quit']:
+			sys.exit('\n\nbye !')
+		else:
+			print("\nOverwrite existing dir of ", val.target_name)
+			os.makedirs(val.target_name, exist_ok=True)
+	else:
+		print("\nMake new dir of ", val.target_name)
+		os.makedirs(val.target_name)
+	return
 
 ####################################
 # Read condition udf
@@ -196,38 +227,45 @@ def readconditionudf():
 	# 
 	val.initialize = u.get('PreTreatment.Initialize.Type')
 	if val.initialize == 'SlowPO':
-		val.step_rfc = u.get('PreTreatment.Initialize.SlowPO.Step_rfc[]')
-		val.step_rfc_time = u.get('PreTreatment.Initialize.SlowPO.Time')
+		val.spo_r = u.get('PreTreatment.Initialize.SlowPO.spo_r[]')
+		val.spo_time = u.get('PreTreatment.Initialize.SlowPO.Time')
+		val.spo_eval = u.get('PreTreatment.Initialize.SlowPO.Evaluate')
 	elif val.initialize == 'Harmonic':
 		val.harmonicK = u.get('PreTreatment.Initialize.Harmonic.HarmonicBond_K')
 		val.harmonic_time = u.get('PreTreatment.Initialize.Harmonic.Time')
+		val.harmonic_eval = u.get('PreTreatment.Initialize.Harmonic.Evaluate')
 	#
 	val.kg_repeat = u.get('PreTreatment.Setup_KG.Repeat')
 	val.kg_time = u.get('PreTreatment.Setup_KG.Time')
+	val.kg_eval = u.get('PreTreatment.Setup_KG.Evaluate')
 	# 
-	val.laos = u.get('Relaxation.LAOS.Calc')
-	if val.laos == 'Yes':
-		val.laos_repeat = u.get('Relaxation.LAOS.Yes.Repeat')
-		val.laos_n = u.get('Relaxation.LAOS.Yes.N_LAOS')
-		val.laos_amp =  u.get('Relaxation.LAOS.Yes.LAOS_Amp')
-		val.laos_freq =  u.get('Relaxation.LAOS.Yes.LAOS_Freq')
-		val.laos_time = [val.laos_period, int(val.laos_n/val.laos_freq/val.laos_period), int(1/val.laos_freq/val.laos_period/100)]
+	val.laos = u.get('Relaxation.LAOS.LAOS')
+	if val.laos == 'Calc':
+		val.laos_n = u.get('Relaxation.LAOS.Calc.Cycles')
+		val.laos_amp =  u.get('Relaxation.LAOS.Calc.LAOS_Amp')
+		val.laos_freq =  u.get('Relaxation.LAOS.Calc.LAOS_Freq')
+		val.laos_time = [val.laos_period, int(val.laos_n/val.laos_freq/val.laos_period), int(val.laos_n/val.laos_freq/val.laos_period/100)]
+		val.laos_eval = u.get('Relaxation.LAOS.Calc.Evaluate')
 	#
-	val.heat = u.get('Relaxation.HeatCycle.Calc')
-	if val.heat == 'Yes':
-		val.heat_repeat = u.get('Relaxation.HeatCycle.Yes.Repeat')
-		val.heat_temp = u.get('Relaxation.HeatCycle.Yes.Temperature[]')
-		val.heat_time = u.get('Relaxation.HeatCycle.Yes.Time')
+	val.heat = u.get('Relaxation.HeatCycle.HeatCycle')
+	if val.heat == 'Calc':
+		val.heat_repeat = u.get('Relaxation.HeatCycle.Calc.Repeat')
+		val.heat_temp = u.get('Relaxation.HeatCycle.Calc.Temperature[]')
+		val.heat_time = u.get('Relaxation.HeatCycle.Calc.Time')
+		val.heat_eval = u.get('Relaxation.HeatCycle.Calc.Evaluate')
 	#
 	val.final_time = u.get('Relaxation.Final_Relaxation.Time')
+	val.final_eval = u.get('Relaxation.Final_Relaxation.Evaluate')
 	# シミュレーションの条件
 	val.equilib_repeat = u.get('SimulationCond.Equilib_Condition.Repeat')
 	val.equilib_time = u.get('SimulationCond.Equilib_Condition.Time')
+	val.equilib_eval = u.get('SimulationCond.Equilib_Condition.Evaluate')
 	#
-	val.greenkubo = u.get('SimulationCond.GreenKubo.Calc')
-	if val.greenkubo == 'Yes':
-		val.greenkubo_repeat = u.get('SimulationCond.GreenKubo.Yes.Repeat')
-		val.greenkubo_time = u.get('SimulationCond.GreenKubo.Yes.Time')
+	val.greenkubo = u.get('SimulationCond.GreenKubo.GreenKubo')
+	if val.greenkubo == 'Calc':
+		val.greenkubo_repeat = u.get('SimulationCond.GreenKubo.Calc.Repeat')
+		val.greenkubo_time = u.get('SimulationCond.GreenKubo.Calc.Time')
+		val.greenkubo_eval = u.get('SimulationCond.GreenKubo.Calc.Evaluate')
 	return
 
 ###############################################################
@@ -256,7 +294,7 @@ def init_calc():
 		text += "ポリマーAの本数:\t\t\t" + str(val.ma_polymers) + "\n"
 		text += "ポリマーBのセグメント数:\t\t" + str(val.nb_segments) + "\n"
 		text += "ポリマーBの本数:\t\t\t" + str(val.mb_polymers) + "\n"
-		text += "相互作用パラメタ:\t\t\t" + str(val.epsilon) + "\n"
+		text += "相互作用パラメタの差:\t\t\t" + str(val.epsilon) + "\n"
 		val.mol_name = ["polymerA", "polymerB"]
 		val.atom_name = ["A", "B"]
 		val.bond_name = ["bond_AA", "bond_BB"]
@@ -272,65 +310,46 @@ def init_calc():
 	text += "################################################" + "\n"
 	text += "初期化条件:\t\t\t\t" + val.initialize + "\n"
 	if val.initialize == 'SlowPO':
-		text += "Slow Push Off 条件:\t" + ', '.join(map(str, val.step_rfc)) + "\n"
-		text += "Slow Push Off 時間条件:\t" + str(val.step_rfc_time) + "\n"
+		text += "Slow Push Off 条件:\t" + ', '.join(map(str, val.spo_r)) + "\n"
+		text += "Slow Push Off 時間条件:\t" + str(val.spo_time) + "\n"
+		text += "シミュレーション後の評価:\t\t" + val.spo_eval + "\n"
 	else:
 		text += "ばね定数:\t\t\t\t" + str(val.harmonicK) + "\n"
 		text += "時間条件:\t\t" + str(val.harmonic_time) + "\n"
+		text += "シミュレーション後の評価:\t\t" + val.harmonic_eval + "\n"
 	text += "##\n"
 	text += "KG初期化計算繰り返し:\t\t\t" + str(val.kg_repeat) + "\n"
 	text += "KG初期化時間条件:\t" + str(val.kg_time) + "\n"
-	if val.laos == 'Yes':
+	text += "シミュレーション後の評価:\t\t" + val.kg_eval + "\n"
+	if val.laos == 'Calc':
 		text += "################################################" + "\n"
 		text += "緩和条件:\n"
-		text += "LAOS 操作の繰り返し:\t\t\t" + str(val.laos_repeat) + "\n"
 		text += "LAOS 回数:\t\t\t\t" + str(val.laos_n) + "\n"
 		text += "最大ひずみ:\t\t\t\t" + str(val.laos_amp) + "\n"
 		text += "周波数:\t\t\t\t\t" + str(val.laos_freq) + "\n"
 		text += "LAOS 計算の時間条件:\t" + str(val.laos_time) + "\n"
-	if val.laos == 'No' and val.heat == 'Yes':
+		text += "シミュレーション後の評価:\t\t" + val.laos_eval + "\n"
+	if val.laos == 'No' and val.heat == 'Calc':
 		text += "################################################" + "\n"
 		text += "緩和条件:\n"
-	if val.heat == 'Yes':
+	if val.heat == 'Calc':
 		text += "##\n"
 		text += "昇温緩和の繰り返し:\t\t\t" + str(val.heat_repeat) + "\n"
 		text += "昇温緩和の温度条件:\t\t" + str(val.heat_temp) + "\n"
 		text += "昇温緩和の時間条件:\t" + str(val.heat_time) + "\n"
+		text += "シミュレーション後の評価:\t\t" + val.heat_eval + "\n"
 	text += "##\n"
 	text += "最終緩和の時間条件:\t" + str(val.final_time) + "\n"
+	text += "シミュレーション後の評価:\t\t" + val.final_eval + "\n"
 	text += "################################################" + "\n"
 	text += "平衡化計算繰り返し:\t\t\t" + str(val.equilib_repeat) + "\n"
 	text += "平衡化時間条件:\t\t" + str(val.equilib_time ) + "\n"
-	if val.greenkubo == 'Yes':
+	text += "シミュレーション後の評価:\t\t" + val.equilib_eval + "\n"
+	if val.greenkubo == 'Calc':
 		text += "##\n"
 		text += "応力緩和計算繰り返し:\t\t\t" + str(val.greenkubo_repeat) + "\n"
 		text += "応力緩和時間条件:\t" + str(val.greenkubo_time) + "\n"
+		text += "シミュレーション後の評価:\t\t" + val.greenkubo_eval + "\n"
 	text += "################################################" + "\n"
 	print(text)
-	return
-
-################################################################################
-# 計算用のディレクトリーを作成
-def make_dir():
-	if val.model == "Homo":
-		val.target_name = val.model + '_NA_' + str(val.na_segments) + "_" + val.initialize
-	else:
-		val.target_name = val.model + '_NA_' + str(val.na_segments) + '_NB_' + str(val.nb_segments) + '_epsilon_' + str(val.epsilon).replace('.', '_') + "_" + val.initialize
-	if val.laos == 'Yes':
-		val.target_name += '_wLAOS'
-	if val.heat == 'Yes':
-		val.target_name += '_wHeat'
-
-	if os.path.exists(val.target_name):
-		print('\nTarget Dir of ', val.target_name, 'exists !!')
-		print('\nQuit: type [q]uit')
-		inp = input('Overwrite ==> [y]es >> ').lower()
-		if inp in ['q','quit']:
-			sys.exit('bye')
-		else:
-			print("Overwrite ", val.target_name)
-			os.makedirs(val.target_name, exist_ok=True)
-	else:
-		print("\nMake new dir of ", val.target_name)
-		os.makedirs(val.target_name)
 	return

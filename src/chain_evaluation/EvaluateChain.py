@@ -72,20 +72,20 @@ class SelectChain:
 	def __init__(self, target):
 		self.uobj = UDFManager(target)
 
-	# ##########################
-	# # ホモポリマーのリストを作成
-	# def make_chain_list(self):
-	# 	atom_list = self.uobj.get("Set_of_Molecules.molecule[].atom[]")
-	# 	self.uobj.jump(-1)
-	# 	chain_list = []
-	# 	end_list = []
-	# 	for i, target_chain in enumerate(atom_list):
-	# 		tmp = []
-	# 		for j, atom in enumerate(target_chain):
-	# 			tmp.append(j)
-	# 		end_list.append([i, [tmp[0], tmp[-1]]])
-	# 		chain_list.append([i, tmp])
-	# 	return end_list, chain_list
+	##########################
+	# ホモポリマーのリストを作成
+	def make_chain_list(self):
+		atom_list = self.uobj.get("Set_of_Molecules.molecule[].atom[]")
+		self.uobj.jump(-1)
+		chain_list = []
+		end_list = []
+		for i, target_chain in enumerate(atom_list):
+			tmp = []
+			for j, atom in enumerate(target_chain):
+				tmp.append(j)
+			end_list.append([i, [tmp[0], tmp[-1]]])
+			chain_list.append([i, tmp])
+		return end_list, chain_list
 
 	########################################
 	# 架橋点およびストランドの構成アトムのリスト

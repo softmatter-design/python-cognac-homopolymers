@@ -22,6 +22,7 @@ def setup_all():
 	return
 
 ##############################################
+# 各種バッチ条件を設定
 def pre_batch():
 	if platform.system() == "Windows":
 		val.batch = ""
@@ -29,7 +30,6 @@ def pre_batch():
 		val.batch = "#!/bin/bash\n"
 	return
 
-# ファイル名の処理
 def add_batch():
 	# ターミナルのタイトルを設定
 	if platform.system() == "Windows":
@@ -50,9 +50,9 @@ def write_batch():
 		f.write(val.batch)
 	if platform.system() == "Linux":
 		os.chmod(f_batch, 0o777)
-		
+	return
+
 #####################
-# 各種バッチ条件を設定
 def setup_udf():
 	val.template = val.base_udf
 	val.read_udf = ''
@@ -60,98 +60,100 @@ def setup_udf():
 	initialize()
 	# Relaxation に応じて緩和計算を設定
 	relaxation()
-
+	# SimulationCond に応じて設定
+	simulation()
 	return
 ######################################################################
 # 初期化条件の設定
 def initialize():
 	if val.initialize == "SlowPO":
 		# Force Capped LJ によりステップワイズに初期化
-		for val.rfc in val.step_rfc:
+		for val.rfc in val.spo_r:
 			val.title = "Calculating-Pre_SlowPushOff_r_" + str(round(val.rfc, 3)).replace('.', '_')
 			val.file_name = 'Pre_rfc_' + str(round(val.rfc, 3)).replace('.', '_') + "_uin.udf"
-			val.f_eval = 0
+			val.f_eval = val.spo_eval
 			add_batch()
-			slowpushoff_setup()
+			slowpushoff()
+			val.read_udf, val.template = val.out_udf, val.present_udf
 	elif val.initialize == "Harmonic":
+		# ハーモニックボンドを使って初期化
 		val.title = "Calculating-Pre_Harmonic"
 		val.file_name = 'Pre_Harmonic_K_' + str(int(val.harmonicK)) + "_uin.udf"
-		val.f_eval = 0
+		val.f_eval = val.harmonic_eval
 		add_batch()
 		harmonic()
-	#
+		val.read_udf, val.template = val.out_udf, val.present_udf
+	# KG鎖へと変換
 	for i in range(val.kg_repeat):
-		val.title = "Calculating-Pre_KG_" + str(i+1) + '_in_' + str(val.kg_repeat)
-		val.file_name = 'Pre_KG_' + str(i+1) + '_in_' + str(val.kg_repeat) + "_uin.udf"
-		val.f_eval = 1
+		val.title = "Calculating-Pre_KG_" + str(i)
+		val.file_name = 'Pre_KG_' + str(i)  + "_uin.udf"
+		val.f_eval = val.kg_eval
 		add_batch()
 		kg_setup()
+		val.read_udf, val.template = val.out_udf, val.present_udf
+	return
 
 # 緩和条件の設定
 def relaxation():
-	if val.laos == "Yes":
-		pass
-		# 
-		# for i in range(val.laos_repeat):
-		# 	val.title = "Calculating-Relax_LAOS_" + str(i+1) + '_in_' + str(val.laos_repeat)
-		# 	for ax in ['x', 'y', 'z']:
-		# 		val.file_name = 'Relax_LAOS' + str(i+1) + '_axis_' + str(ax) + "_uin.udf"
-		# 		val.f_eval = 0
-		# 		add_batch()
-		# 		#
-		# 		slowpushoff_setup()
+	if val.laos == "Calc":
+		# LAOS により構造緩和
+		val.title = "Calculating-Relax_LAOS"
+		val.file_name = 'Relax_LAOS_uin.udf'
+		val.f_eval = val.laos_eval
+		add_batch()
+		#
+		laos()
+		val.read_udf, val.template = val.out_udf, val.present_udf
 			
-	if val.heat == "Yes":
+	if val.heat == "Calc":
+		# 加温することにより構造緩和
 		for i in range(val.heat_repeat):
 			for val.temp in val.heat_temp:
 				val.title = "Calculating-Relax_Heat" + str(i+1) + '_in_' + str(val.heat_repeat) + '_Temp_' + str(val.temp).replace('.', '_')
 				val.file_name = 'Relax_Temp_' + str(val.temp).replace('.', '_') + '_rep_' + str(i+1) + "_uin.udf"
-				val.f_eval = 1
+				val.f_eval = val.harmonic_eval
 				add_batch()
 				#
 				heat()
-	# # KG 鎖に設定
-	# time = [0.01, 10000000, 100000]
-	# batch = self.make_title(batch, "Calculating-KG")
-	# fn_ext = ['KG_', "uin.udf"]
-	# f_eval = 1
-	# present_udf, read_udf, batch = self.make_step(fn_ext, batch, f_eval)
-	# self.kg_setup(template, pre, present_udf, time)
-	# pre = read_udf
-	# template = present_udf
-	# # 平衡化計算
-	# repeat = 4
-	# time = [0.01, 2000000, 5000]
-	# for i in range(repeat):
-	# 	# 平衡化
-	# 	batch = self.make_title(batch, "Calculating-Eq_" + str(i))
-	# 	fn_ext = ['Eq_' + str(i) + "_", "uin.udf"]
-	# 	f_eval = 1
-	# 	present_udf, read_udf, batch = self.make_step(fn_ext, batch, f_eval)
-	# 	self.eq_setup(template, pre, present_udf, time)
-	# 	pre = read_udf
-	# 	template = present_udf
-	# # グリーン久保
-	# repeat = 5
-	# time = [0.01, 20000000, 100000]
-	# for i in range(repeat):
-	# 	# 平衡化
-	# 	batch = self.make_title(batch, "Calculating-GK_" + str(i))
-	# 	fn_ext = ['GK_' + str(i) + "_", "uin.udf"]
-	# 	f_eval = 1
-	# 	present_udf, read_udf, batch = self.make_step(fn_ext, batch, f_eval)
-	# 	self.greenkubo_setup(template, pre, present_udf, time)
-	# 	pre = read_udf
-	# 	template = present_udf
+				val.read_udf, val.template = val.out_udf, val.present_udf
+
+	# 放置することにより緩和
+	val.title = "Calculating-Relax"
+	val.file_name = 'Relax_final_uin.udf'
+	val.f_eval = val.final_eval
+	add_batch()
+	#
+	cont(val.final_time)
+	val.read_udf, val.template = val.out_udf, val.present_udf
 	return
 
-###############
-# UDF 作成条件
-###############
+# SimulationCond に応じて設定
+def simulation():
+	# 平衡状態でのサンプリング
+	for i in range(val.equilib_repeat):
+		val.title = 'Calculating-Simulation_Equilibrium_' + str(i)
+		val.file_name = 'Equilibrium_' + str(i) + '_uin.udf'
+		val.f_eval = val.final_eval
+		add_batch()
+		#
+		cont(val.equilib_time)
+		val.read_udf, val.template = val.out_udf, val.present_udf
+	for i in range(val.greenkubo_repeat):
+		val.title = "Calculating-GreenKubo"
+		val.file_name = 'GK_' + str(i) + '_uin.udf'
+		val.f_eval = val.final_eval
+		add_batch()
+		#
+		greenkubo()
+		val.read_udf, val.template = val.out_udf, val.present_udf
+	return
+
 ##############################################################################
+# UDF 作成条件
+#
 # ユーザーポテンシャルにより、Force Capped LJ で、ステップワイズにノンボンドを増加
-def slowpushoff_setup():
-	time = val.step_rfc_time
+def slowpushoff():
+	time = val.spo_time
 	u = UDFManager(os.path.join(val.target_name, val.template))
 	# goto global data
 	u.jump(-1)
@@ -187,7 +189,7 @@ def slowpushoff_setup():
 		p = 'Initial_Structure.Relaxation.'
 		u.put(1, p + 'Relaxation')
 		u.put('DYNAMICS', p + 'Method')
-		u.put(100, p + 'Max_Relax_Force')
+		u.put(200, p + 'Max_Relax_Force')
 		u.put(100000, p + 'Max_Relax_Steps')
 	else:
 		p = 'Initial_Structure.Generate_Method.'
@@ -233,12 +235,9 @@ def slowpushoff_setup():
 		u.put(val.rfc,						p + 'Force_Cap_LJ.r_FC', [i])
 	#--- Write UDF ---
 	u.write(os.path.join(val.target_name, val.present_udf))
-	#
-	val.read_udf = val.out_udf
-	val.template = val.present_udf
+	
 	return
 
-##############################################################################
 # Harmonic bond にて初期構造を作成
 def harmonic():
 	time = val.harmonic_time
@@ -277,7 +276,7 @@ def harmonic():
 		p = 'Initial_Structure.Relaxation.'
 		u.put(1, p + 'Relaxation')
 		u.put('DYNAMICS', p + 'Method')
-		u.put(100, p + 'Max_Relax_Force')
+		u.put(200, p + 'Max_Relax_Force')
 		u.put(100000, p + 'Max_Relax_Steps')
 	else:
 		p = 'Initial_Structure.Generate_Method.'
@@ -314,15 +313,15 @@ def harmonic():
 		u.put(2**(1/6),						p + 'Cutoff', [i])
 		u.put(1.0,							p + 'Scale_1_4_Pair', [i])
 		u.put(1.0,							p + 'Lennard_Jones.sigma', [i])
-		u.put(1.0,							p + 'Lennard_Jones.epsilon', [i])
+		if pairname == "site_A-site_B":
+			u.put(1.0 + val.epsilon,	p + 'Lennard_Jones.epsilon', [i])
+		else:
+			u.put(1.0,					p + 'Lennard_Jones.epsilon', [i])
 	#--- Write UDF ---
 	u.write(os.path.join(val.target_name, val.present_udf))
-	#	
-	val.read_udf = val.out_udf
-	val.template = val.present_udf
+
 	return
 
-###############################################
 # ボンドをFENE、ノンボンドをLJとしてKG鎖を設定
 def kg_setup():
 	time = val.kg_time
@@ -335,7 +334,6 @@ def kg_setup():
 	u.put(time[0], p + 'Time.delta_T')
 	u.put(time[1], p + 'Time.Total_Steps')
 	u.put(time[2], p + 'Time.Output_Interval_Steps')
-	u.put([0], p + 'Time.delta_T')
 	# Calc_Potential_Flags
 	p = 'Simulation_Conditions.Calc_Potential_Flags.'
 	u.put(1, p + 'Bond')
@@ -356,6 +354,9 @@ def kg_setup():
 	# Relaxation
 	p = 'Initial_Structure.Relaxation.'
 	u.put(1, p + 'Relaxation')
+	u.put('DYNAMICS', p + 'Method')
+	u.put(200, p + 'Max_Relax_Force')
+	u.put(100000, p + 'Max_Relax_Steps')
 	#--- Simulation_Conditions ---
 	# bond
 	for i, b_name in enumerate(val.bond_name):
@@ -377,15 +378,44 @@ def kg_setup():
 		u.put(2**(1/6),					p + 'Cutoff', [i])
 		u.put(1.0,						p + 'Scale_1_4_Pair', [i])
 		u.put(1.0,						p + 'Lennard_Jones.sigma', [i])
-		u.put(1.0,						p + 'Lennard_Jones.epsilon', [i])
+		if pairname == "site_A-site_B":
+			u.put(1.0 + val.epsilon,	p + 'Lennard_Jones.epsilon', [i])
+		else:
+			u.put(1.0,					p + 'Lennard_Jones.epsilon', [i])
 	#--- Write UDF ---
 	u.write(os.path.join(val.target_name, val.present_udf))
-	#	
-	val.read_udf = val.out_udf
-	val.template = val.present_udf
+
 	return
 
-###############################################
+# LAOS による緩和
+def laos():
+	time = val.laos_time
+	u = UDFManager(os.path.join(val.target_name, val.template))
+	# goto global data
+	u.jump(-1)
+	#--- Simulation_Conditions ---
+	# Dynamics_Conditions
+	p = 'Simulation_Conditions.Dynamics_Conditions.'
+	u.put(time[0], 	p + 'Time.delta_T')
+	u.put(time[1], 	p + 'Time.Total_Steps')
+	u.put(time[2], 	p + 'Time.Output_Interval_Steps')
+	#
+	u.put('Lees_Edwards', 	p + 'Deformation.Method')
+	u.put('Dynamic', 		p + 'Deformation.Lees_Edwards.Method')
+	u.put(val.laos_amp, 	p + 'Deformation.Lees_Edwards.Dynamic.Amplitude')
+	u.put(val.laos_freq, 	p + 'Deformation.Lees_Edwards.Dynamic.Frequency')
+	# Generate_Method
+	p = 'Initial_Structure.Generate_Method.'
+	u.put('Restart', p+'Method')
+	u.put([val.read_udf, -1, 1, 0], p+'Restart')
+	# Relaxation
+	p = 'Initial_Structure.Relaxation.'
+	u.put(1, p + 'Relaxation')
+	#--- Write UDF ---
+	u.write(os.path.join(val.target_name, val.present_udf))
+
+	return
+
 # 加温による緩和
 def heat():
 	time = val.heat_time
@@ -399,7 +429,6 @@ def heat():
 	u.put(time[1], p + 'Time.Total_Steps')
 	u.put(time[2], p + 'Time.Output_Interval_Steps')
 	u.put(val.temp, 		p + 'Temperature.Temperature')
-	u.put(0., 				p + 'Pressure_Stress.Pressure')
 	# Generate_Method
 	p = 'Initial_Structure.Generate_Method.'
 	u.put('Restart', p+'Method')
@@ -409,15 +438,11 @@ def heat():
 	u.put(1, p + 'Relaxation')
 	#--- Write UDF ---
 	u.write(os.path.join(val.target_name, val.present_udf))
-	#	
-	val.read_udf = val.out_udf
-	val.template = val.present_udf
 	return
 
-#####################################################
 # 直前の条件を維持して平衡化
-def eq_setup(self, template, read_udf, present_udf, time):
-	u = UDFManager(os.path.join(self.target_dir, template))
+def cont(time):
+	u = UDFManager(os.path.join(val.target_name, val.template))
 	u.jump(-1)
 	#--- Simulation_Conditions ---
 	# Dynamics_Conditions
@@ -425,22 +450,21 @@ def eq_setup(self, template, read_udf, present_udf, time):
 	u.put(time[0],  p+'Time.delta_T')
 	u.put(time[1],  p+'Time.Total_Steps')
 	u.put(time[2],  p+'Time.Output_Interval_Steps')
-	#--- Initial_Structure ---
 	# Generate_Method
 	p = 'Initial_Structure.Generate_Method.'
 	u.put('Restart', p+'Method')
-	u.put([read_udf, -1, 1, 0], p+'Restart')
+	u.put([val.read_udf, -1, 1, 0], p+'Restart')
+	# Relaxation
 	p = 'Initial_Structure.Relaxation.'
-	u.put(0, p + 'Relaxation')
-
+	u.put(1, p + 'Relaxation')
 	#--- Write UDF ---
-	u.write(os.path.join(self.target_dir, present_udf))
+	u.write(os.path.join(val.target_name, val.present_udf))
 	return
 
-###########################################################
 # グリーン久保計算
-def greenkubo_setup(self, template, read_udf, present_udf, time):
-	u = UDFManager(os.path.join(self.target_dir, template))
+def greenkubo():
+	time = val.greenkubo_time
+	u = UDFManager(os.path.join(val.target_name, val.template))
 	u.jump(-1)
 	#--- Simulation_Conditions ---
 	# Dynamics_Conditions
@@ -450,15 +474,15 @@ def greenkubo_setup(self, template, read_udf, present_udf, time):
 	u.put(time[2],  p+'Time.Output_Interval_Steps')
 	# Calc Correlation
 	u.put(1, 'Simulation_Conditions.Output_Flags.Correlation_Function.Stress')
-	#--- Initial_Structure ---
 	# Generate_Method
 	p = 'Initial_Structure.Generate_Method.'
 	u.put('Restart', p+'Method')
-	u.put([read_udf, -1, 1, 0], p+'Restart')
+	u.put([val.read_udf, -1, 1, 0], p+'Restart')
+	# Relaxation
 	p = 'Initial_Structure.Relaxation.'
-	u.put(0, p + 'Relaxation')
+	u.put(1, p + 'Relaxation')
 	#--- Write UDF ---
-	u.write(os.path.join(self.target_dir, present_udf))
+	u.write(os.path.join(val.target_name, val.present_udf))
 	return
 
 
