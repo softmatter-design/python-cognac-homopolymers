@@ -1,6 +1,7 @@
 target = ''
 target_name = ''
 uobj = ''
+blend_a = 0
 
 nw_type = ''
 func = 0

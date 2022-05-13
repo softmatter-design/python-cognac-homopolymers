@@ -21,94 +21,18 @@ import chain_evaluation.values as val
 ################################################################################
 # MAIN
 ################################################################################
-def evaluate_nw2():
-	# ネットワークからそれぞれのストランドに対応するポリマー鎖を抽出
-	chain_select()
+def evaluate_chain():
+	# 対象となる udf ファイルを選択
+	select_udf()
 	# ポリマー鎖関連の特性情報を計算
-	eval_chain()
+	evaluate()
 	# 計算結果を出力
 	make_output()
 	return
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-samples = 10
-records = 7
-
-target = np.array([range(i, i+records) for i in np.arange(samples)])
-
-base = np.zeros(records)
-
-tlist = [[[-1. if i == number else 1.0 if i == number + step else x for i, x in enumerate(base)] if number < records - step else base for number in range(records - 1)] for step in range(1, records)]
-# tlist = []
-# for step in range(1, records):
-# 	tmp2 = []
-# 	for number in range(records-1):
-# 		tmp = []
-# 		for i, elm in enumerate(base):
-# 			if i == number:
-# 				tmp.append(-1.)
-# 			elif i == number+step:
-# 				tmp.append(1.)
-# 			else:
-# 				tmp.append(elm)
-# 		if number < records-step:
-# 			tmp2.append(tmp)
-# 		else:
-# 			tmp2.append(base)
-# 	tlist.append(tmp2)
-
-
-modar = np.array(tlist)
-
-
-norm_ar = np.array([1./x for x in reversed(range(1, records))])
-print(norm_ar)
-
-abs_d = np.abs(np.matmul(modar, np.transpose(target)))
-sum_data = np.sum(np.average(abs_d, axis = 2), axis = 1)
-ave_abs = np.multiply(sum_data, norm_ar)
-print(ave_abs)
-
-sqred_d = np.square(np.matmul(modar, np.transpose(target)))
-sum_sq_data = np.sum(np.average(sqred_d, axis = 2), axis = 1)
-ave_sq = np.multiply(sum_sq_data, norm_ar)
-print(ave_sq)
-
-def evaluate_all():
-	target = file_select()
-	#
-	calc_cond, chain_list = make_chain_list(target)
-	# ポリマー鎖関連の特性情報を計算
-	ec = EvaluateChain(calc_cond, chain_list, target)
-	ec.eval_chain()
-	return
-
-##############################
+##########################################
 # 対象となる udf ファイルを選択
-def file_select():
+def select_udf():
 	param = sys.argv
 	if len(param) == 1:
 		print("usage: python", param[0], "Honya_out.udf")
@@ -116,160 +40,124 @@ def file_select():
 	elif not os.access(param[1],os.R_OK):
 		print(param[1], "not exists.")
 		exit(1)
-	else:
-		target = param[1]
-	return target
-
-
-
-
-def array_test():
-	t=5
-	tlist = []
-	base = np.zeros(t)
-	for i, elm in enumerate(base):
-		if i == 0:
-			tlist.append(-1.)
-		elif i == 1:
-			tlist.append(1.)
-		else:
-			tlist.append(elm)
-
-	tlist2 = [-1. if i ==0 else x for i, x in enumerate(base)]
-
-	print(tlist)
-	print(tlist2)
-	# test = np.array()
-
+	elif len(param) > 2:
+		val.blend_a = param[2]
+	val.target = param[1]
+	val.target_name = val.target.split('.')[0]
+	val.uobj = UDFManager(val.target)
 	return
-
-
-
-
-
-
-
-
-################################################################################
-# ネットワークからそれぞれのストランドに対応するポリマー鎖を抽出
-################################################################################
-def chain_select():
-	# Select target UDF
-	file_select()
-	# Read conditions from 'target_condition.udf' and strand data from target UDF
-	read_all()
-	return
-
-# 対象となる udf ファイルを選択
-def file_select():
-	param = sys.argv
-	if len(param) == 1:
-		print("usage: python", param[0], "Honya_out.udf")
-		exit(1)
-	elif not os.access(param[1],os.R_OK):
-		print(param[1], "not exists.")
-		exit(1)
-	else:
-		val.target = param[1]
-		val.target_name = val.target.split('.')[0]
-		val.uobj = UDFManager(val.target)
-	return
-
-# 計算条件から、ホモポリマーとネットワークを判断し、chain_list を読み出す。
-def read_all():
-	# 計算対象の条件を読み取る
-	if not os.access('target_condition.udf', os.R_OK):
-		print("'target_condition.udf' is not exists.")
-		exit(1)
-	else:
-		cond_u = UDFManager('target_condition.udf')
-		val.nw_type = cond_u.get('TargetCond.Model.TargetModel')
-		val.func = cond_u.get('TargetCond.NetWork.N_Strands')
-		val.n_seg = cond_u.get('TargetCond.NetWork.N_Segments')
-		val.l_bond= cond_u.get('SimulationCond.l_bond')
-		val.cn = cond_u.get('TargetCond.Strand.Characteristic_Ratio')
-		val.nu = cond_u.get('TargetCond.System.Nu')
-	# ネットワークストランドのリストを作成
-	make_chain_list()
-	return
-
-# 架橋点およびストランドの構成アトムのリスト
-def make_chain_list():
-	jp_list = make_jp_list()
-	#
-	jp_pair_list = []
-	for target_jp in jp_list:
-		jp_pair, strand = make_jp_pair(target_jp)
-		for i in jp_pair:
-			jp_pair_list.append(i)
-		if len(strand) > 0:
-			for i in strand:
-				val.chain_list.append(i)
-	return
-
-# 架橋点のリストを作成
-def make_jp_list():
-	val.uobj.jump(-1)
-	jp_list = []
-	#
-	mols = val.uobj.get("Set_of_Molecules.molecule[]")
-	for i, mol in enumerate(mols):
-		for j, atom in enumerate(mol[1]):
-			if atom[1] == 'JP_A' or atom[1] == 'JP_B':
-				jp_list.append([i, j])
-	return jp_list
-
-# 架橋点どうしのペアを作成
-def make_jp_pair(target_jp):
-	molecule = target_jp[0]
-	start_jp = target_jp[1]
-	jp_pair = []
-	strand = []
-	bonds = val.uobj.get("Set_of_Molecules.molecule[].bond[]")
-	tmp_bonds = bonds[molecule]
-	#
-	for i, bond in enumerate(tmp_bonds):
-		tmp = []
-		if ((bond[1] == start_jp) or (bond[2] == start_jp)) and (i < len(tmp_bonds) - 1):
-			if bond[1] == start_jp:
-				adj = bond[2]
-			else:
-				adj = bond[1]
-			tmp.append(start_jp)
-			tmp.append(adj)
-			tmp_id = i + 1
-			while tmp_bonds[tmp_id][0] == "bond_Strand":
-				if tmp_bonds[tmp_id][1] == adj:
-					adj = tmp_bonds[tmp_id][2]
-				elif tmp_bonds[tmp_id][2] == adj:
-					adj = tmp_bonds[tmp_id][1]
-				tmp.append(adj)
-				tmp_id += 1
-			#
-			if tmp_bonds[tmp_id][1] == adj:
-				end_jp = tmp_bonds[tmp_id][2]
-			elif tmp_bonds[tmp_id][2] == adj:
-				end_jp = tmp_bonds[tmp_id][1]
-			if len(tmp)>2:
-				tmp.append(end_jp)
-				jp_pair.append([molecule, [start_jp, end_jp]])
-				strand.append([molecule, tmp])
-	return jp_pair, strand
 
 ###############################################################################
 # ポリマー鎖関連の特性情報を計算
 ###############################################################################
-def eval_chain():
+def evaluate():
 	rec_size = val.uobj.totalRecord()
 	for rec in range(1, rec_size):
 		print("Reading Rec=", rec, '/', rec_size - 1)
-		read_chain(rec)
+		read_chain2(rec)
 	# 鎖に沿ったセグメント間距離の平均を計算
 	calc_cn()
-	#
-	if val.target.split('_')[0] == 'GK':
-		calc_gk()
+	# #
+	# if val.target.split('_')[0] == 'GK':
+	# 	calc_gk()
 	return
+
+def read_chain2(rec):
+	val.uobj.jump(rec)
+	bound_setup()
+	CU.setCell(tuple(val.uobj.get("Structure.Unit_Cell.Cell_Size")))
+	ba = CognacBasicAnalysis(val.target, rec)
+
+	mols = val.uobj.get('Structure.Position.mol[]')
+	c_len = len(mols[0])
+	# ステップの数に対応した空リストを作成
+	r2_ij = [[] for i in range(c_len)]
+	xp = [[] for i in range(c_len)]
+	for chain in mols:
+		mol = chain[0]
+				
+		for step in range(1, c_len):
+			for start in range(c_len - step):
+
+				end1 = tuple(mol[start])
+				end2 = tuple(mol[start + step])
+				e2e_vec = CU.distanceWithBoundary(end1, end2)
+				e2e_dist = np.linalg.norm(np.array(e2e_vec))
+				r2 = e2e_dist**2
+				r2_ij[step].append(r2)
+				if step == 1:
+					val.bond_list.append(e2e_dist)
+				if step == c_len -1:
+					val.Rx_list.append(e2e_vec[0])
+					val.Ry_list.append(e2e_vec[1])
+					val.Rz_list.append(e2e_vec[2])
+					#
+					val.R_list.append(e2e_dist)
+
+
+
+	# 	# gr
+	# 	cg = CognacGeometryAnalysis(val.target, rec)
+	# 	val.gr_list.append(cg.gr([atom]))
+	# 	# xp
+	# 	pos = []
+	# 	for i in range(c_len):
+	# 		segment = np.array(val.uobj.get("Structure.Position.mol[].atom[]", [mol, chain[1][i]]))
+	# 		pos.append(segment)
+	# 	print(pos)
+	# 	for p in range(c_len):
+	# 		tmp = np.zeros(3)
+	# 		end0 = np.array(val.uobj.get("Structure.Position.mol[].atom[]", [mol, chain[1][0]]))
+	# 		end1 = np.array(val.uobj.get("Structure.Position.mol[].atom[]", [mol, chain[1][c_len - 1]]))
+	# 		k = np.pi*p/(c_len-1)
+	# 		for i in range(c_len):
+	# 			segment = np.array(val.uobj.get("Structure.Position.mol[].atom[]", [mol, chain[1][i]]))
+	# 			tmp += segment*np.cos(k*i)
+	# 		tmp2 = (tmp - (end0 + end1)/2.)/c_len
+	# 		print(p)
+	# 		print('mine', tmp/c_len)
+	# 		print('cog', ba.Xp(pos, p))
+	# 		xp[p].append(tmp2)
+			
+
+	# xp_ave = []
+	# for p in range(c_len):
+	# 	xp_ave.append([p, np.average(np.array(xp[p]), axis = 0)])
+	# val.xp_list.append(xp_ave)
+	# # gr
+	# cg = CognacGeometryAnalysis(val.target, rec)
+	# val.gr_list.append(cg.gr([atom]))
+
+	# cn
+	cn = []
+	for i in range(1, len(r2_ij)):
+		cn.append([i, np.average(np.array(r2_ij[i]))/(i*val.l_bond**2)])
+	val.cn_list.append(cn)
+	# angle
+	anglename = val.uobj.get("Molecular_Attributes.Angle_Potential[].Name")
+	tmp = np.array(ba.angle(anglename[0]))
+	val.angle_list.extend(list(tmp[~np.isnan(tmp)]))
+
+
+	return
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # ポリマー鎖関連の特性情報
 def read_chain(rec):
@@ -470,14 +358,14 @@ def make_output():
 	for cond in hist_list:
 		make_hist_all(cond)
 	# マルチ形式での出力
-	multi_list = [
-			["gr", val.gr_list, ['Distance', 'g(r)']],
-			["CN", val.cn_list, ['|i-j|', 'C_{|i-j|}']],
-			["CN_part", val.cn_part, ['|i-j|', 'C_{|i-j|}']],
-			["CN_ave", val.cn_ave, ['|i-j|', 'C_{|i-j|}']]
-			]
-	for cond in multi_list:
-		make_multi(cond)
+	# multi_list = [
+	# 		["gr", val.gr_list, ['Distance', 'g(r)']],
+	# 		["CN", val.cn_list, ['|i-j|', 'C_{|i-j|}']],
+	# 		["CN_part", val.cn_part, ['|i-j|', 'C_{|i-j|}']],
+	# 		["CN_ave", val.cn_ave, ['|i-j|', 'C_{|i-j|}']]
+	# 		]
+	# for cond in multi_list:
+	# 	make_multi(cond)
 	return
 
 ##########################
@@ -551,64 +439,64 @@ def script_content():
 	script += '#\nset size square\n'
 	script += '#\nset xlabel "' + val.leg[0] + '"\nset ylabel "' + val.leg[1] + '"\n\n'
 	if val.base_name == "Rx" or val.base_name == "Ry" or val.base_name == "Rz":
-		script += 'N = ' + str(val.n_seg) + '\n'
-		script += 'bond = ' + str(val.l_bond) + '\n'
-		script += 'CN = ' + str(val.cn) + '\n'
-		script += 'func = ' + str(val.func) + '\n\n'
-		script += 'R1 = bond*(CN*(N+1))**0.5\n'
-		script += 'C=0.1\n'
-		script += 'delta=R1\n'
-		script += 'frc = 1.0\n\n'
+	# 	script += 'N = ' + str(val.n_seg) + '\n'
+	# 	script += 'bond = ' + str(val.l_bond) + '\n'
+	# 	script += 'CN = ' + str(val.cn) + '\n'
+	# 	script += 'func = ' + str(val.func) + '\n\n'
+	# 	script += 'R1 = bond*(CN*(N+1))**0.5\n'
+	# 	script += 'C=0.1\n'
+	# 	script += 'delta=R1\n'
+	# 	script += 'frc = 1.0\n\n'
 		#
-		if val.nw_type == 'Regular' and val.func == 3:
-			script += 'set xrange [0:]\n#set yrange [0:100]\n'
-			script += 'Pos = R1/2**0.5\n\n'
-			script += 'f(x) = C*(1./2.)*(1./(frc*delta*(3.142*2.)**0.5))*(exp(-1.*((x-Pos)**2)/(2.*(frc*delta)**2)) + exp(-1.*((x+Pos)**2)/(2.*(frc*delta)**2)))\n\n'
-			script += 'fit f(x) data via C, frc\n\n'
-			script += '#\nset label 1 sprintf("frc =%.3f", frc) at graph 0.7, 0.8\n\n'
-		elif val.nw_type == 'Regular' and val.func == 4:
-			script += 'set xrange [0:]\n#set yrange [0:100]\n'
-			script += 'Pos = R1/3**0.5\ndelta = Pos*(1. - 2./func)**0.5\n\n'
-			script += 'f(x) = C*(1./2.)*(1./(frc*delta*(3.142*2.)**0.5))*(exp(-1.*((x-Pos)**2)/(2.*(frc*delta)**2)) + exp(-1.*((x+Pos)**2)/(2.*(frc*delta)**2)))\n\n'
-			script += 'fit f(x) data via C, frc\n\n'
-			script += '#\nset label 1 sprintf("frc =%.3f", frc) at graph 0.7, 0.8\n\n'
-		elif val.nw_type == 'Regular' and val.func == 6:
-			script += 'set xrange [0:]\n#set yrange [0:100]\n'
-			script += 'Pos = R1\ndelta = Pos*(1. - 2./func)**0.5\n\n'
-			script += 'f(x) = C*(1./2.)*(1./(frc*delta*(3.142*2.)**0.5))*(exp(-1.*((x-Pos)**2)/(2.*(frc*delta)**2)) + exp(-1.*((x+Pos)**2)/(2.*(frc*delta)**2)))\n\n'
-			script += 'fit f(x) data via C, frc\n\n'
-			script += '#\nset label 1 sprintf("frc =%.3f", frc) at graph 0.7, 0.8\n\n'
-		elif val.nw_type == 'Regular' and val.func == 8:
-			script += 'set xrange [0:]\n#set yrange [0:100]\n'
-			script += 'Pos = R1/3**0.5\ndelta = Pos*(1. - 2./func)**0.5\n\n'
-			script += 'f(x) = C*(1./2.)*(1./(frc*delta*(3.142*2.)**0.5))*(exp(-1.*((x-Pos)**2)/(2.*(frc*delta)**2)) + exp(-1.*((x+Pos)**2)/(2.*(frc*delta)**2)))\n\n'
-			script += 'fit f(x) data via C, frc\n\n'
-			script += '#\nset label 1 sprintf("frc =%.3f", frc) at graph 0.7, 0.8\n\n'
-		else:
-			script += '#set xrange [0:]\n#set yrange [0:100]\nfrc=1.0\n\n'
-			script += 'f(x) = C*exp(-1.*x**2./(2.*(frc*R1)**2.))/(2.*pi*(frc*R1)**2.)**(1/2)\n\n'
-			script += 'fit f(x) data via C, frc\n\n'
-			script += '#\nset label 1 sprintf("frc =%.3f", frc) at graph 0.7, 0.8\n\n'
+		# if val.nw_type == 'Regular' and val.func == 3:
+		# 	script += 'set xrange [0:]\n#set yrange [0:100]\n'
+		# 	script += 'Pos = R1/2**0.5\n\n'
+		# 	script += 'f(x) = C*(1./2.)*(1./(frc*delta*(3.142*2.)**0.5))*(exp(-1.*((x-Pos)**2)/(2.*(frc*delta)**2)) + exp(-1.*((x+Pos)**2)/(2.*(frc*delta)**2)))\n\n'
+		# 	script += 'fit f(x) data via C, frc\n\n'
+		# 	script += '#\nset label 1 sprintf("frc =%.3f", frc) at graph 0.7, 0.8\n\n'
+		# elif val.nw_type == 'Regular' and val.func == 4:
+		# 	script += 'set xrange [0:]\n#set yrange [0:100]\n'
+		# 	script += 'Pos = R1/3**0.5\ndelta = Pos*(1. - 2./func)**0.5\n\n'
+		# 	script += 'f(x) = C*(1./2.)*(1./(frc*delta*(3.142*2.)**0.5))*(exp(-1.*((x-Pos)**2)/(2.*(frc*delta)**2)) + exp(-1.*((x+Pos)**2)/(2.*(frc*delta)**2)))\n\n'
+		# 	script += 'fit f(x) data via C, frc\n\n'
+		# 	script += '#\nset label 1 sprintf("frc =%.3f", frc) at graph 0.7, 0.8\n\n'
+		# elif val.nw_type == 'Regular' and val.func == 6:
+		# 	script += 'set xrange [0:]\n#set yrange [0:100]\n'
+		# 	script += 'Pos = R1\ndelta = Pos*(1. - 2./func)**0.5\n\n'
+		# 	script += 'f(x) = C*(1./2.)*(1./(frc*delta*(3.142*2.)**0.5))*(exp(-1.*((x-Pos)**2)/(2.*(frc*delta)**2)) + exp(-1.*((x+Pos)**2)/(2.*(frc*delta)**2)))\n\n'
+		# 	script += 'fit f(x) data via C, frc\n\n'
+		# 	script += '#\nset label 1 sprintf("frc =%.3f", frc) at graph 0.7, 0.8\n\n'
+		# elif val.nw_type == 'Regular' and val.func == 8:
+		# 	script += 'set xrange [0:]\n#set yrange [0:100]\n'
+		# 	script += 'Pos = R1/3**0.5\ndelta = Pos*(1. - 2./func)**0.5\n\n'
+		# 	script += 'f(x) = C*(1./2.)*(1./(frc*delta*(3.142*2.)**0.5))*(exp(-1.*((x-Pos)**2)/(2.*(frc*delta)**2)) + exp(-1.*((x+Pos)**2)/(2.*(frc*delta)**2)))\n\n'
+		# 	script += 'fit f(x) data via C, frc\n\n'
+		# 	script += '#\nset label 1 sprintf("frc =%.3f", frc) at graph 0.7, 0.8\n\n'
+		# else:
+		# 	script += '#set xrange [0:]\n#set yrange [0:100]\nfrc=1.0\n\n'
+		# 	script += 'f(x) = C*exp(-1.*x**2./(2.*(frc*R1)**2.))/(2.*pi*(frc*R1)**2.)**(1/2)\n\n'
+		# 	script += 'fit f(x) data via C, frc\n\n'
+		# 	script += '#\nset label 1 sprintf("frc =%.3f", frc) at graph 0.7, 0.8\n\n'
 		#
 		script += 'set style fill solid 0.5\nset boxwidth ' + str(val.bin_width) + '\n'
 		script += '#\nplot data w boxes noti'
-		script += ', \\\n f(x)'
+		# script += ', \\\n f(x)'
 
 	if val.base_name == "R":
-		script += 'N = ' + str(val.n_seg) + '\n'
-		script += 'bond = ' + str(val.l_bond) + '\n'
-		script += 'CN = ' + str(val.cn) + '\n'
-		script += 'f = ' + str(val.func) + '\n'
-		script += 'R1 = bond*(CN*(N+1))**0.5\n'
-		script += 'C=0.1\nfrc=1.0\n\n'
-		script += 'f(x) = C*exp(-1.*(x-frc*R1)**2./(2.*sigma**2.))/(2.*pi*sigma**2.)**(1/2)\n\n'
-		script += '#f(x) = C*4.*pi*x**2.*(3./(2.*pi*(frc*R1)**2.))**(3./2.)*exp(-3.*x**2./(2.*(frc*R1)**2.))\n'	
-		script += 'fit f(x) data via frc, C, sigma\n\n'
-		script += '#\nset label 1 sprintf("frc.=%.3f", frc) at graph 0.7, 0.8\n'
-		script += 'set label 1 sprintf("sigma=%.3f", sigma) at graph 0.7, 0.8\n\n'
+		# script += 'N = ' + str(val.n_seg) + '\n'
+		# script += 'bond = ' + str(val.l_bond) + '\n'
+		# script += 'CN = ' + str(val.cn) + '\n'
+		# script += 'f = ' + str(val.func) + '\n'
+		# script += 'R1 = bond*(CN*(N+1))**0.5\n'
+		# script += 'C=0.1\nfrc=1.0\n\n'
+		# script += 'f(x) = C*exp(-1.*(x-frc*R1)**2./(2.*sigma**2.))/(2.*pi*sigma**2.)**(1/2)\n\n'
+		# script += '#f(x) = C*4.*pi*x**2.*(3./(2.*pi*(frc*R1)**2.))**(3./2.)*exp(-3.*x**2./(2.*(frc*R1)**2.))\n'	
+		# script += 'fit f(x) data via frc, C, sigma\n\n'
+		# script += '#\nset label 1 sprintf("frc.=%.3f", frc) at graph 0.7, 0.8\n'
+		# script += 'set label 1 sprintf("sigma=%.3f", sigma) at graph 0.7, 0.8\n\n'
 		script += 'set style fill solid 0.5\nset boxwidth ' + str(val.bin_width) + '\n'
 		script += '#\nplot data w boxes noti'
-		script += ', \\\n f(x)'
+		# script += ', \\\n f(x)'
 	#
 	if val.base_name == "angle":
 		if val.option != "box":
@@ -996,3 +884,96 @@ def modify(self, data_list):
 
 
 
+
+
+
+def test():
+
+	samples = 10
+	records = 7
+
+	target = np.array([range(i, i+records) for i in np.arange(samples)])
+
+	base = np.zeros(records)
+
+	tlist = [[[-1. if i == number else 1.0 if i == number + step else x for i, x in enumerate(base)] if number < records - step else base for number in range(records - 1)] for step in range(1, records)]
+	# tlist = []
+	# for step in range(1, records):
+	# 	tmp2 = []
+	# 	for number in range(records-1):
+	# 		tmp = []
+	# 		for i, elm in enumerate(base):
+	# 			if i == number:
+	# 				tmp.append(-1.)
+	# 			elif i == number+step:
+	# 				tmp.append(1.)
+	# 			else:
+	# 				tmp.append(elm)
+	# 		if number < records-step:
+	# 			tmp2.append(tmp)
+	# 		else:
+	# 			tmp2.append(base)
+	# 	tlist.append(tmp2)
+
+
+	modar = np.array(tlist)
+
+
+	norm_ar = np.array([1./x for x in reversed(range(1, records))])
+	print(norm_ar)
+
+	abs_d = np.abs(np.matmul(modar, np.transpose(target)))
+	sum_data = np.sum(np.average(abs_d, axis = 2), axis = 1)
+	ave_abs = np.multiply(sum_data, norm_ar)
+	print(ave_abs)
+
+	sqred_d = np.square(np.matmul(modar, np.transpose(target)))
+	sum_sq_data = np.sum(np.average(sqred_d, axis = 2), axis = 1)
+	ave_sq = np.multiply(sum_sq_data, norm_ar)
+	print(ave_sq)
+
+def evaluate_all():
+	target = file_select()
+	#
+	calc_cond, chain_list = make_chain_list(target)
+	# ポリマー鎖関連の特性情報を計算
+	ec = EvaluateChain(calc_cond, chain_list, target)
+	ec.eval_chain()
+	return
+
+##############################
+# 対象となる udf ファイルを選択
+def file_select():
+	param = sys.argv
+	if len(param) == 1:
+		print("usage: python", param[0], "Honya_out.udf")
+		exit(1)
+	elif not os.access(param[1],os.R_OK):
+		print(param[1], "not exists.")
+		exit(1)
+	else:
+		target = param[1]
+	return target
+
+
+
+
+def array_test():
+	t=5
+	tlist = []
+	base = np.zeros(t)
+	for i, elm in enumerate(base):
+		if i == 0:
+			tlist.append(-1.)
+		elif i == 1:
+			tlist.append(1.)
+		else:
+			tlist.append(elm)
+
+	tlist2 = [-1. if i ==0 else x for i, x in enumerate(base)]
+
+	print(tlist)
+	print(tlist2)
+	# test = np.array()
+
+	return
