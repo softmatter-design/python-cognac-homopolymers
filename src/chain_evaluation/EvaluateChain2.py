@@ -29,6 +29,127 @@ def evaluate_nw2():
 	# 計算結果を出力
 	make_output()
 	return
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+samples = 10
+records = 7
+
+target = np.array([range(i, i+records) for i in np.arange(samples)])
+
+base = np.zeros(records)
+
+tlist = [[[-1. if i == number else 1.0 if i == number + step else x for i, x in enumerate(base)] if number < records - step else base for number in range(records - 1)] for step in range(1, records)]
+# tlist = []
+# for step in range(1, records):
+# 	tmp2 = []
+# 	for number in range(records-1):
+# 		tmp = []
+# 		for i, elm in enumerate(base):
+# 			if i == number:
+# 				tmp.append(-1.)
+# 			elif i == number+step:
+# 				tmp.append(1.)
+# 			else:
+# 				tmp.append(elm)
+# 		if number < records-step:
+# 			tmp2.append(tmp)
+# 		else:
+# 			tmp2.append(base)
+# 	tlist.append(tmp2)
+
+
+modar = np.array(tlist)
+
+
+norm_ar = np.array([1./x for x in reversed(range(1, records))])
+print(norm_ar)
+
+abs_d = np.abs(np.matmul(modar, np.transpose(target)))
+sum_data = np.sum(np.average(abs_d, axis = 2), axis = 1)
+ave_abs = np.multiply(sum_data, norm_ar)
+print(ave_abs)
+
+sqred_d = np.square(np.matmul(modar, np.transpose(target)))
+sum_sq_data = np.sum(np.average(sqred_d, axis = 2), axis = 1)
+ave_sq = np.multiply(sum_sq_data, norm_ar)
+print(ave_sq)
+
+def evaluate_all():
+	target = file_select()
+	#
+	calc_cond, chain_list = make_chain_list(target)
+	# ポリマー鎖関連の特性情報を計算
+	ec = EvaluateChain(calc_cond, chain_list, target)
+	ec.eval_chain()
+	return
+
+##############################
+# 対象となる udf ファイルを選択
+def file_select():
+	param = sys.argv
+	if len(param) == 1:
+		print("usage: python", param[0], "Honya_out.udf")
+		exit(1)
+	elif not os.access(param[1],os.R_OK):
+		print(param[1], "not exists.")
+		exit(1)
+	else:
+		target = param[1]
+	return target
+
+
+
+
+def array_test():
+	t=5
+	tlist = []
+	base = np.zeros(t)
+	for i, elm in enumerate(base):
+		if i == 0:
+			tlist.append(-1.)
+		elif i == 1:
+			tlist.append(1.)
+		else:
+			tlist.append(elm)
+
+	tlist2 = [-1. if i ==0 else x for i, x in enumerate(base)]
+
+	print(tlist)
+	print(tlist2)
+	# test = np.array()
+
+	return
+
+
+
+
+
+
+
+
 ################################################################################
 # ネットワークからそれぞれのストランドに対応するポリマー鎖を抽出
 ################################################################################
