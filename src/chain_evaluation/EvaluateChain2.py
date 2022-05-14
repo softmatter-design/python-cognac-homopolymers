@@ -64,25 +64,26 @@ def evaluate():
 
 def read_chain2(rec):
 	val.uobj.jump(rec)
-	bound_setup()
-	CU.setCell(tuple(val.uobj.get("Structure.Unit_Cell.Cell_Size")))
+	# bound_setup()
+	# CU.setCell(tuple(val.uobj.get("Structure.Unit_Cell.Cell_Size")))
 	ba = CognacBasicAnalysis(val.target, rec)
-
-	mols = val.uobj.get('Structure.Position.mol[]')
-	c_len = len(mols[0])
+	mols = val.uobj.get('Structure.Position.mol[].atom[]')
 	# ステップの数に対応した空リストを作成
+	c_len = len(mols[0])
 	r2_ij = [[] for i in range(c_len)]
 	xp = [[] for i in range(c_len)]
 	for chain in mols:
-		mol = chain[0]
-				
 		for step in range(1, c_len):
 			for start in range(c_len - step):
-
-				end1 = tuple(mol[start])
-				end2 = tuple(mol[start + step])
-				e2e_vec = CU.distanceWithBoundary(end1, end2)
+				end1 = tuple(chain[start])
+				end2 = tuple(chain[start + step])
+				# e2e_vec = CU.distanceWithBoundary(end1, end2)
+				e2e_vec = np.array(end2) - np.array(end1)
 				e2e_dist = np.linalg.norm(np.array(e2e_vec))
+				
+				
+
+
 				r2 = e2e_dist**2
 				r2_ij[step].append(r2)
 				if step == 1:
@@ -130,6 +131,7 @@ def read_chain2(rec):
 
 	# cn
 	cn = []
+	val.l_bond = np.average(np.array(val.bond_list))
 	for i in range(1, len(r2_ij)):
 		cn.append([i, np.average(np.array(r2_ij[i]))/(i*val.l_bond**2)])
 	val.cn_list.append(cn)

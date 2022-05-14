@@ -6,7 +6,7 @@ blend_a = 0
 nw_type = ''
 func = 0
 n_seg = 0
-l_bond= 0.
+l_bond= 0.97
 cn = 0.
 nu = 0.
 
