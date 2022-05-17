@@ -3,12 +3,8 @@ target_name = ''
 uobj = ''
 blend_a = 0
 
-nw_type = ''
-func = 0
-n_seg = 0
+n_bonds = 0
 l_bond= 0.97
-cn = 0.
-nu = 0.
 
 # [val.n_seg, val.l_bond, val.cn, val.func, val.nu, val.nw_type]
 

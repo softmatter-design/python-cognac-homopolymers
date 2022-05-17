@@ -1,1 +1,1 @@
-from .EvaluateChain2 import evaluate_chain
+from .EvaluateChain import evaluate_chain
