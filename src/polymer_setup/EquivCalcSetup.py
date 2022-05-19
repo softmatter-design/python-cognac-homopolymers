@@ -56,8 +56,8 @@ def write_batch():
 def setup_udf():
 	val.template = val.base_udf
 	val.read_udf = ''
-	# initialize に応じて計算条件を選択
-	initialize()
+	# PreTreatment に応じて計算条件を選択
+	PreTreatment()
 	# Relaxation に応じて緩和計算を設定
 	relaxation()
 	# SimulationCond に応じて設定
@@ -65,8 +65,8 @@ def setup_udf():
 	return
 ######################################################################
 # 初期化条件の設定
-def initialize():
-	if val.initialize == "SlowPO":
+def PreTreatment():
+	if val.PreTreatment == "Calc":
 		# Force Capped LJ によりステップワイズに初期化
 		for val.rfc in val.spo_r:
 			val.title = "Calculating-Pre_SlowPushOff_r_" + str(round(val.rfc, 3)).replace('.', '_')
@@ -75,14 +75,6 @@ def initialize():
 			add_batch()
 			slowpushoff()
 			val.read_udf, val.template = val.out_udf, val.present_udf
-	elif val.initialize == "Harmonic":
-		# ハーモニックボンドを使って初期化
-		val.title = "Calculating-Pre_Harmonic"
-		val.file_name = 'Pre_Harmonic_K_' + str(int(val.harmonicK)) + "_uin.udf"
-		val.f_eval = val.harmonic_eval
-		add_batch()
-		harmonic()
-		val.read_udf, val.template = val.out_udf, val.present_udf
 	# KG鎖へと変換
 	for i in range(val.kg_repeat):
 		val.title = "Calculating-Pre_KG_" + str(i)
@@ -111,7 +103,7 @@ def relaxation():
 			for val.temp in val.heat_temp:
 				val.title = "Calculating-Relax_Heat" + str(i+1) + '_in_' + str(val.heat_repeat) + '_Temp_' + str(val.temp).replace('.', '_')
 				val.file_name = 'Relax_Temp_' + str(val.temp).replace('.', '_') + '_rep_' + str(i+1) + "_uin.udf"
-				val.f_eval = val.harmonic_eval
+				val.f_eval = val.heat_eval
 				add_batch()
 				#
 				heat()
@@ -238,89 +230,89 @@ def slowpushoff():
 	
 	return
 
-# Harmonic bond にて初期構造を作成
-def harmonic():
-	time = val.harmonic_time
-	u = UDFManager(os.path.join(val.target_name, val.template))
-	# goto global data
-	u.jump(-1)
-	#--- Simulation_Conditions ---
-	# Dynamics_Conditions
-	p = 'Simulation_Conditions.Dynamics_Conditions.'
-	u.put(100000000., 	p + 'Max_Force')
-	u.put(time[0], p + 'Time.delta_T')
-	u.put(time[1], p + 'Time.Total_Steps')
-	u.put(time[2], p + 'Time.Output_Interval_Steps')
-	u.put(1.0, 					p + 'Temperature.Temperature')
-	u.put(0., 					p + 'Pressure_Stress.Pressure')
-	# Calc_Potential_Flags
-	p = 'Simulation_Conditions.Calc_Potential_Flags.'
-	u.put(1, p + 'Bond')
-	u.put(0, p + 'Angle')
-	u.put(1, p + 'Non_Bonding_Interchain')
-	u.put(1, p + 'Non_Bonding_1_3')
-	u.put(1, p + 'Non_Bonding_1_4')
-	u.put(1, p + 'Non_Bonding_Intrachain')
-	#--- Initial_Structure ---
-	# Initial_Unit_Cell
-	p = 'Initial_Structure.Initial_Unit_Cell.'
-	u.put(val.density, p + 'Density')
-	u.put([0, 0, 0, 90.0, 90.0, 90.0], p + 'Cell_Size')
-	# Generate_Method
-	if val.read_udf == '':
-		# Set atoms
-		p = 'Initial_Structure.Generate_Method.'
-		u.put('Random', p + 'Method')
-		u.put('Fix', p + 'Random.Angle.Constraint')
-		# Relaxation
-		p = 'Initial_Structure.Relaxation.'
-		u.put(1, p + 'Relaxation')
-		u.put('DYNAMICS', p + 'Method')
-		u.put(200, p + 'Max_Relax_Force')
-		u.put(100000, p + 'Max_Relax_Steps')
-	else:
-		p = 'Initial_Structure.Generate_Method.'
-		u.put('Restart', p+'Method')
-		u.put([val.read_udf, -1, 1, 0], p+'Restart')
-		# Relaxation
-		p = 'Initial_Structure.Relaxation.'
-		u.put(1, p + 'Relaxation')
-	#--- Simulation_Conditions ---
-	# bond
-	for i, b_name in enumerate(val.bond_name):
-		p = 'Molecular_Attributes.Bond_Potential[].'
-		u.put(b_name, 		p + 'Name', [i])
-		u.put('Harmonic', 	p + 'Potential_Type', [i])
-		u.put(0.97,			p + 'R0', [i])
-		u.put(val.harmonicK, 		p + 'Harmonic.K', [i])
-	# Angle
-	for i, anglename in enumerate(val.angle_name):
-		p = 'Molecular_Attributes.Angle_Potential[].'
-		u.put(anglename, 		p + 'Name', [i])
-		u.put('Force_Cap_LJ', 	p + 'Potential_Type', [i])
-		u.put(73.0, 				p + 'theta0', [i])
-		u.put(1.0, 			p + 'Force_Cap_LJ.sigma', [i])
-		u.put(1.0, 			p + 'Force_Cap_LJ.epsilon', [i])
-		u.put(1.122462, 		p + 'Force_Cap_LJ.cutoff', [i])
-		u.put(0.8, 			p + 'Force_Cap_LJ.r_FC', [i])
-	#--- Pair_Interaction[] ---
-	for i, pairname in enumerate(val.pair_name):
-		p = 'Interactions.Pair_Interaction[].'
-		u.put(pairname,   					p + 'Name', [i])
-		u.put('Lennard_Jones', 				p + 'Potential_Type', [i])
-		u.put(val.site_pair_name[i][0],	p + 'Site1_Name', [i])
-		u.put(val.site_pair_name[i][1],	p + 'Site2_Name', [i])
-		u.put(2**(1/6),						p + 'Cutoff', [i])
-		u.put(1.0,							p + 'Scale_1_4_Pair', [i])
-		u.put(1.0,							p + 'Lennard_Jones.sigma', [i])
-		if pairname == "site_A-site_B":
-			u.put(1.0 + val.epsilon,	p + 'Lennard_Jones.epsilon', [i])
-		else:
-			u.put(1.0,					p + 'Lennard_Jones.epsilon', [i])
-	#--- Write UDF ---
-	u.write(os.path.join(val.target_name, val.present_udf))
+# # Harmonic bond にて初期構造を作成
+# def harmonic():
+# 	time = val.harmonic_time
+# 	u = UDFManager(os.path.join(val.target_name, val.template))
+# 	# goto global data
+# 	u.jump(-1)
+# 	#--- Simulation_Conditions ---
+# 	# Dynamics_Conditions
+# 	p = 'Simulation_Conditions.Dynamics_Conditions.'
+# 	u.put(100000000., 	p + 'Max_Force')
+# 	u.put(time[0], p + 'Time.delta_T')
+# 	u.put(time[1], p + 'Time.Total_Steps')
+# 	u.put(time[2], p + 'Time.Output_Interval_Steps')
+# 	u.put(1.0, 					p + 'Temperature.Temperature')
+# 	u.put(0., 					p + 'Pressure_Stress.Pressure')
+# 	# Calc_Potential_Flags
+# 	p = 'Simulation_Conditions.Calc_Potential_Flags.'
+# 	u.put(1, p + 'Bond')
+# 	u.put(0, p + 'Angle')
+# 	u.put(1, p + 'Non_Bonding_Interchain')
+# 	u.put(1, p + 'Non_Bonding_1_3')
+# 	u.put(1, p + 'Non_Bonding_1_4')
+# 	u.put(1, p + 'Non_Bonding_Intrachain')
+# 	#--- Initial_Structure ---
+# 	# Initial_Unit_Cell
+# 	p = 'Initial_Structure.Initial_Unit_Cell.'
+# 	u.put(val.density, p + 'Density')
+# 	u.put([0, 0, 0, 90.0, 90.0, 90.0], p + 'Cell_Size')
+# 	# Generate_Method
+# 	if val.read_udf == '':
+# 		# Set atoms
+# 		p = 'Initial_Structure.Generate_Method.'
+# 		u.put('Random', p + 'Method')
+# 		u.put('Fix', p + 'Random.Angle.Constraint')
+# 		# Relaxation
+# 		p = 'Initial_Structure.Relaxation.'
+# 		u.put(1, p + 'Relaxation')
+# 		u.put('DYNAMICS', p + 'Method')
+# 		u.put(200, p + 'Max_Relax_Force')
+# 		u.put(100000, p + 'Max_Relax_Steps')
+# 	else:
+# 		p = 'Initial_Structure.Generate_Method.'
+# 		u.put('Restart', p+'Method')
+# 		u.put([val.read_udf, -1, 1, 0], p+'Restart')
+# 		# Relaxation
+# 		p = 'Initial_Structure.Relaxation.'
+# 		u.put(1, p + 'Relaxation')
+# 	#--- Simulation_Conditions ---
+# 	# bond
+# 	for i, b_name in enumerate(val.bond_name):
+# 		p = 'Molecular_Attributes.Bond_Potential[].'
+# 		u.put(b_name, 		p + 'Name', [i])
+# 		u.put('Harmonic', 	p + 'Potential_Type', [i])
+# 		u.put(0.97,			p + 'R0', [i])
+# 		u.put(val.harmonicK, 		p + 'Harmonic.K', [i])
+# 	# Angle
+# 	for i, anglename in enumerate(val.angle_name):
+# 		p = 'Molecular_Attributes.Angle_Potential[].'
+# 		u.put(anglename, 		p + 'Name', [i])
+# 		u.put('Force_Cap_LJ', 	p + 'Potential_Type', [i])
+# 		u.put(73.0, 				p + 'theta0', [i])
+# 		u.put(1.0, 			p + 'Force_Cap_LJ.sigma', [i])
+# 		u.put(1.0, 			p + 'Force_Cap_LJ.epsilon', [i])
+# 		u.put(1.122462, 		p + 'Force_Cap_LJ.cutoff', [i])
+# 		u.put(0.8, 			p + 'Force_Cap_LJ.r_FC', [i])
+# 	#--- Pair_Interaction[] ---
+# 	for i, pairname in enumerate(val.pair_name):
+# 		p = 'Interactions.Pair_Interaction[].'
+# 		u.put(pairname,   					p + 'Name', [i])
+# 		u.put('Lennard_Jones', 				p + 'Potential_Type', [i])
+# 		u.put(val.site_pair_name[i][0],	p + 'Site1_Name', [i])
+# 		u.put(val.site_pair_name[i][1],	p + 'Site2_Name', [i])
+# 		u.put(2**(1/6),						p + 'Cutoff', [i])
+# 		u.put(1.0,							p + 'Scale_1_4_Pair', [i])
+# 		u.put(1.0,							p + 'Lennard_Jones.sigma', [i])
+# 		if pairname == "site_A-site_B":
+# 			u.put(1.0 + val.epsilon,	p + 'Lennard_Jones.epsilon', [i])
+# 		else:
+# 			u.put(1.0,					p + 'Lennard_Jones.epsilon', [i])
+# 	#--- Write UDF ---
+# 	u.write(os.path.join(val.target_name, val.present_udf))
 
-	return
+# 	return
 
 # ボンドをFENE、ノンボンドをLJとしてKG鎖を設定
 def kg_setup():

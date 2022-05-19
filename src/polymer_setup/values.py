@@ -11,13 +11,15 @@ nb_segments = 0
 mb_polymers = 0
 epsilon = 0.
 #
-initialize = ''
+Initial_Random = ''
+fix_angle = 0
+Initial_Nonbond = ''
+initial_eval = ''
+#
+PreTreatment = ''
 spo_r = []
 spo_time = []
 spo_eval = 1
-harmonicK = 0.
-harmonic_time = []
-harmonic_eval = 1
 #
 kg_repeat = 1
 kg_time = []

@@ -53,21 +53,25 @@ def makenewudf():
 					} "条件を入力"
 				} "シミュレーションの条件を設定"
 			} "計算ターゲットの条件を設定"
-		
+		Initial_Structure:{
+			RandomCondition:{
+				Fix_angle:select{"Fix", "No"} "ランダム発生するときの条件を選択",
+					Fix:{theta2_angle:float} "theta2 によりアングル固定する際の角度"
+				}
+			NonbondCondition:{
+				Potential:select{"LJ", "No"} ""
+				}
+			Evaluate:select{"Yes", "No"}"評価を行うかどうかのフラッグ"
+			}
 		PreTreatment:{
-			Initialize:{
-				Type:select{"SlowPO", "Harmonic"} "初期化条件を選択",
-					SlowPO:{
+			Type:{
+				SlowPushOff:select{"Calc", "No"} "初期化条件を選択",
+					Calc:{
 						spo_r[]: float "Slow Push Off での rfc 条件",
 						Time:{delta_T: double, Total_Steps: int, Output_Interval_Steps: int} "時間条件を入力",
 						Evaluate:select{"Yes", "No"}"評価を行うかどうかのフラッグ"
 						}
-					Harmonic:{
-						HarmonicBond_K:float "HarmoncBond のばね定数",
-						Time:{delta_T: double, Total_Steps: int, Output_Interval_Steps: int} "時間条件を入力",
-						Evaluate:select{"Yes", "No"}"評価を行うかどうかのフラッグ"
-						} 
-				} "",
+				} ""
 			Setup_KG:{
 					Repeat: int "計算の繰り返し数",
 					Time:{delta_T: double, Total_Steps: int, Output_Interval_Steps: int} "時間条件を入力",
@@ -124,16 +128,20 @@ def makenewudf():
 	Target:{
 		{"Homo", {20, 50}{20, 50, 20, 50, 0.1}}
 	}
-	
+	Initial_Structure:{
+		{"Fix",{74.000000}}
+		{"LJ"}
+		"Yes"
+	}
+		
 	PreTreatment:{
 		{"SlowPO",
-			{[1.073,1.0,0.9,0.8], {1.0e-02,1000000,5000},"Yes"},
-			{1000., {1.0e-02,100000,1000},"Yes"}
+			{[1.073,1.0,0.9,0.8], {1.0e-02,1000000,5000},"Yes"}
 		}
 		{1,{1.0e-02,100000,1000},"Yes"}
 	}
 	Relaxation:{
-	{"Calc",{10,2.0,0.001,"Yes"}}
+	{"Calc",{10,0.5,0.01,"Yes"}}
 	{"Calc",{2,[2.0, 1.5, 1.0],{1.0e-02,1000000,10000},"Yes"}}
 	{{1.0e-02,100000,1000},"Yes"}
 	}
@@ -175,9 +183,9 @@ def read_and_setcondition():
 # 計算用のディレクトリーを作成
 def make_dir():
 	if val.model == "Homo":
-		val.target_name = val.model + '_NA_' + str(val.na_segments) + '_MA_' + str(val.ma_polymers) + "_" + val.initialize
+		val.target_name = val.model + '_NA_' + str(val.na_segments) + '_MA_' + str(val.ma_polymers) + "_" + val.PreTreatment
 	else:
-		val.target_name = val.model + '_NA_' + str(val.na_segments) + '_MA_' + str(val.ma_polymers) + '_NB_' + str(val.nb_segments) + '_MB_' + str(val.mb_polymers) + '_epsilon_' + str(val.epsilon).replace('.', '_') + "_" + val.initialize
+		val.target_name = val.model + '_NA_' + str(val.na_segments) + '_MA_' + str(val.ma_polymers) + '_NB_' + str(val.nb_segments) + '_MB_' + str(val.mb_polymers) + '_epsilon_' + str(val.epsilon).replace('.', '_') + "_" + val.PreTreatment
 	if val.laos == 'Calc':
 		val.target_name += '_wLAOS'
 	if val.heat == 'Calc':
@@ -224,16 +232,18 @@ def readconditionudf():
 		val.nb_segments = u.get('Target.Model.Blend.NB_Segments')
 		val.mb_polymers = u.get('Target.Model.Blend.MB_Chains')
 		val.epsilon = u.get('Target.Model.Blend.epsilon_AB')
-	# 
-	val.initialize = u.get('PreTreatment.Initialize.Type')
-	if val.initialize == 'SlowPO':
-		val.spo_r = u.get('PreTreatment.Initialize.SlowPO.spo_r[]')
-		val.spo_time = u.get('PreTreatment.Initialize.SlowPO.Time')
-		val.spo_eval = u.get('PreTreatment.Initialize.SlowPO.Evaluate')
-	elif val.initialize == 'Harmonic':
-		val.harmonicK = u.get('PreTreatment.Initialize.Harmonic.HarmonicBond_K')
-		val.harmonic_time = u.get('PreTreatment.Initialize.Harmonic.Time')
-		val.harmonic_eval = u.get('PreTreatment.Initialize.Harmonic.Evaluate')
+	#
+	val.Initial_Random = u.get('Initial_Structure.RandomCondition.Fix_angle')
+	if val.Initial_Random == 'Fix':
+		val.fix_angle = u.get('Initial_Structure.RandomCondition.Fix.theta2_angle')
+	val.Initial_Nonbond = u.get('Initial_Structure.NonbondCondition.Potential')
+	val.initial_eval = u.get('Initial_Structure.Evaluate')
+	#
+	val.PreTreatment = u.get('PreTreatment.Type.SlowPushOff')
+	if val.PreTreatment == 'Calc':
+		val.spo_r = u.get('PreTreatment.Type.Calc.spo_r[]')
+		val.spo_time = u.get('PreTreatment.Type.Calc.Time')
+		val.spo_eval = u.get('PreTreatment.Type.Calc.Evaluate')
 	#
 	val.kg_repeat = u.get('PreTreatment.Setup_KG.Repeat')
 	val.kg_time = u.get('PreTreatment.Setup_KG.Time')
@@ -308,15 +318,18 @@ def init_calc():
 						]
 	text += "全セグメント数:\t\t\t\t" + str(segments) + "\n"
 	text += "################################################" + "\n"
-	text += "初期化条件:\t\t\t\t" + val.initialize + "\n"
-	if val.initialize == 'SlowPO':
+	text += "ランダム設定条件:\n"
+	if val.Initial_Random == 'Fix':
+		text += "アングル固定:\t\t\t\t" + str(val.fix_angle) + "\n"
+	if val.Initial_Nonbond == 'LJ':
+		text += "Non Bond Potential:\t\t\tLJ \n"
+	text += "シミュレーション後の評価:\t\t" + val.initial_eval + "\n"
+	text += "################################################" + "\n"
+	text += "初期化条件:\n"
+	if val.PreTreatment == 'Calc':
 		text += "Slow Push Off 条件:\t" + ', '.join(map(str, val.spo_r)) + "\n"
 		text += "Slow Push Off 時間条件:\t" + str(val.spo_time) + "\n"
 		text += "シミュレーション後の評価:\t\t" + val.spo_eval + "\n"
-	else:
-		text += "ばね定数:\t\t\t\t" + str(val.harmonicK) + "\n"
-		text += "時間条件:\t\t" + str(val.harmonic_time) + "\n"
-		text += "シミュレーション後の評価:\t\t" + val.harmonic_eval + "\n"
 	text += "##\n"
 	text += "KG初期化計算繰り返し:\t\t\t" + str(val.kg_repeat) + "\n"
 	text += "KG初期化時間条件:\t" + str(val.kg_time) + "\n"

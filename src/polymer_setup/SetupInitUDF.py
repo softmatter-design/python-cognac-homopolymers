@@ -82,14 +82,14 @@ def make_base():
 	for i, atomname in enumerate(val.atom_name):
 		p = 'Molecular_Attributes.Atom_Type[].'
 		val.uobj.put(atomname, 	p + 'Name', [i])
-		val.uobj.put(1.0, 			p + 'Mass', [i])
+		val.uobj.put(1.0, 		p + 'Mass', [i])
 	# Bond
 	for i, bondname in enumerate(val.bond_name):
 		p = 'Molecular_Attributes.Bond_Potential[].'
-		val.uobj.put(bondname, 			p + 'Name', [i])
-		val.uobj.put('Harmonic', 			p + 'Potential_Type', [i])
-		val.uobj.put(val.harmonic[0], 	p + 'R0', [i])
-		val.uobj.put(val.harmonic[1], 	p + 'Harmonic.K', [i])
+		val.uobj.put(bondname, 		p + 'Name', [i])
+		val.uobj.put('Harmonic', 	p + 'Potential_Type', [i])
+		val.uobj.put(0.97, 			p + 'R0', [i])
+		val.uobj.put(1000, 			p + 'Harmonic.K', [i])
 	# Angle
 	for i, anglename in enumerate(val.angle_name):
 		p = 'Molecular_Attributes.Angle_Potential[].'
