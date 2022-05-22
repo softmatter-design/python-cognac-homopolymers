@@ -11,12 +11,12 @@ nb_segments = 0
 mb_polymers = 0
 epsilon = 0.
 #
-Initial_Random = ''
+init_fixangle = ''
 fix_angle = 0
-Initial_Nonbond = ''
+init_nonbond = ''
 initial_eval = ''
 #
-PreTreatment = ''
+spo = ''
 spo_r = []
 spo_time = []
 spo_eval = 1

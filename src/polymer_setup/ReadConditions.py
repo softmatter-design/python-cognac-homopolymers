@@ -16,7 +16,6 @@ def setupcondition():
 	findudf()
 	# Read udf and setup initial conditions.
 	read_and_setcondition()
-
 	return
 	
 ###########################################
@@ -64,7 +63,7 @@ def makenewudf():
 			Evaluate:select{"Yes", "No"}"評価を行うかどうかのフラッグ"
 			}
 		PreTreatment:{
-			Type:{
+			SlowPushOff:{
 				SlowPushOff:select{"Calc", "No"} "初期化条件を選択",
 					Calc:{
 						spo_r[]: float "Slow Push Off での rfc 条件",
@@ -135,7 +134,7 @@ def makenewudf():
 	}
 		
 	PreTreatment:{
-		{"SlowPO",
+		{"Calc",
 			{[1.073,1.0,0.9,0.8], {1.0e-02,1000000,5000},"Yes"}
 		}
 		{1,{1.0e-02,100000,1000},"Yes"}
@@ -183,9 +182,15 @@ def read_and_setcondition():
 # 計算用のディレクトリーを作成
 def make_dir():
 	if val.model == "Homo":
-		val.target_name = val.model + '_NA_' + str(val.na_segments) + '_MA_' + str(val.ma_polymers) + "_" + val.PreTreatment
+		val.target_name = val.model + '_NA_' + str(val.na_segments) + '_MA_' + str(val.ma_polymers)
 	else:
-		val.target_name = val.model + '_NA_' + str(val.na_segments) + '_MA_' + str(val.ma_polymers) + '_NB_' + str(val.nb_segments) + '_MB_' + str(val.mb_polymers) + '_epsilon_' + str(val.epsilon).replace('.', '_') + "_" + val.PreTreatment
+		val.target_name = val.model + '_NA_' + str(val.na_segments) + '_MA_' + str(val.ma_polymers) + '_NB_' + str(val.nb_segments) + '_MB_' + str(val.mb_polymers) + '_epsilon_' + str(val.epsilon).replace('.', '_')
+	if val.init_fixangle == 'Fix':
+		val.target_name += '_Fixangle'
+	if val.init_nonbond == 'LJ':
+		val.target_name += '_LJ'
+	if val.spo == 'Calc':
+		val.target_name += '_SPO'
 	if val.laos == 'Calc':
 		val.target_name += '_wLAOS'
 	if val.heat == 'Calc':
@@ -233,17 +238,17 @@ def readconditionudf():
 		val.mb_polymers = u.get('Target.Model.Blend.MB_Chains')
 		val.epsilon = u.get('Target.Model.Blend.epsilon_AB')
 	#
-	val.Initial_Random = u.get('Initial_Structure.RandomCondition.Fix_angle')
-	if val.Initial_Random == 'Fix':
+	val.init_fixangle = u.get('Initial_Structure.RandomCondition.Fix_angle')
+	if val.init_fixangle == 'Fix':
 		val.fix_angle = u.get('Initial_Structure.RandomCondition.Fix.theta2_angle')
-	val.Initial_Nonbond = u.get('Initial_Structure.NonbondCondition.Potential')
+	val.init_nonbond = u.get('Initial_Structure.NonbondCondition.Potential')
 	val.initial_eval = u.get('Initial_Structure.Evaluate')
 	#
-	val.PreTreatment = u.get('PreTreatment.Type.SlowPushOff')
-	if val.PreTreatment == 'Calc':
-		val.spo_r = u.get('PreTreatment.Type.Calc.spo_r[]')
-		val.spo_time = u.get('PreTreatment.Type.Calc.Time')
-		val.spo_eval = u.get('PreTreatment.Type.Calc.Evaluate')
+	val.spo = u.get('PreTreatment.SlowPushOff.SlowPushOff')
+	if val.spo == 'Calc':
+		val.spo_r = u.get('PreTreatment.SlowPushOff.Calc.spo_r[]')
+		val.spo_time = u.get('PreTreatment.SlowPushOff.Calc.Time')
+		val.spo_eval = u.get('PreTreatment.SlowPushOff.Calc.Evaluate')
 	#
 	val.kg_repeat = u.get('PreTreatment.Setup_KG.Repeat')
 	val.kg_time = u.get('PreTreatment.Setup_KG.Time')
@@ -319,14 +324,14 @@ def init_calc():
 	text += "全セグメント数:\t\t\t\t" + str(segments) + "\n"
 	text += "################################################" + "\n"
 	text += "ランダム設定条件:\n"
-	if val.Initial_Random == 'Fix':
+	if val.init_fixangle == 'Fix':
 		text += "アングル固定:\t\t\t\t" + str(val.fix_angle) + "\n"
-	if val.Initial_Nonbond == 'LJ':
+	if val.init_nonbond == 'LJ':
 		text += "Non Bond Potential:\t\t\tLJ \n"
 	text += "シミュレーション後の評価:\t\t" + val.initial_eval + "\n"
 	text += "################################################" + "\n"
 	text += "初期化条件:\n"
-	if val.PreTreatment == 'Calc':
+	if val.spo == 'Calc':
 		text += "Slow Push Off 条件:\t" + ', '.join(map(str, val.spo_r)) + "\n"
 		text += "Slow Push Off 時間条件:\t" + str(val.spo_time) + "\n"
 		text += "シミュレーション後の評価:\t\t" + val.spo_eval + "\n"
