@@ -60,6 +60,7 @@ def makenewudf():
 			NonbondCondition:{
 				Potential:select{"LJ", "No"} ""
 				}
+			Time:{delta_T: double, Total_Steps: int, Output_Interval_Steps: int} "時間条件を入力",
 			Evaluate:select{"Yes", "No"}"評価を行うかどうかのフラッグ"
 			}
 		PreTreatment:{
@@ -130,18 +131,19 @@ def makenewudf():
 	Initial_Structure:{
 		{"Fix",{74.000000}}
 		{"LJ"}
+		{1.0e-02,100000,1000}
 		"Yes"
 	}
 		
 	PreTreatment:{
 		{"Calc",
-			{[1.073,1.0,0.9,0.8], {1.0e-02,1000000,5000},"Yes"}
+			{[1.073,1.0,0.9,0.8], {1.0e-02,100000,1000},"Yes"}
 		}
 		{1,{1.0e-02,100000,1000},"Yes"}
 	}
 	Relaxation:{
 	{"Calc",{10,0.5,0.01,"Yes"}}
-	{"Calc",{2,[2.0, 1.5, 1.0],{1.0e-02,1000000,10000},"Yes"}}
+	{"Calc",{2,[2.0, 1.5, 1.0],{1.0e-02,100000,1000},"Yes"}}
 	{{1.0e-02,100000,1000},"Yes"}
 	}
 	SimulationCond:{
@@ -189,6 +191,8 @@ def make_dir():
 		val.target_name += '_Fixangle'
 	if val.init_nonbond == 'LJ':
 		val.target_name += '_LJ'
+	else:
+		val.target_name += '_noLJ'
 	if val.spo == 'Calc':
 		val.target_name += '_SPO'
 	if val.laos == 'Calc':
@@ -242,7 +246,8 @@ def readconditionudf():
 	if val.init_fixangle == 'Fix':
 		val.fix_angle = u.get('Initial_Structure.RandomCondition.Fix.theta2_angle')
 	val.init_nonbond = u.get('Initial_Structure.NonbondCondition.Potential')
-	val.initial_eval = u.get('Initial_Structure.Evaluate')
+	val.init_time = u.get('Initial_Structure.Time')
+	val.init_eval = u.get('Initial_Structure.Evaluate')
 	#
 	val.spo = u.get('PreTreatment.SlowPushOff.SlowPushOff')
 	if val.spo == 'Calc':
@@ -328,7 +333,8 @@ def init_calc():
 		text += "アングル固定:\t\t\t\t" + str(val.fix_angle) + "\n"
 	if val.init_nonbond == 'LJ':
 		text += "Non Bond Potential:\t\t\tLJ \n"
-	text += "シミュレーション後の評価:\t\t" + val.initial_eval + "\n"
+	text += "ランダム時間条件:\t" + str(val.init_time) + "\n"
+	text += "シミュレーション後の評価:\t\t" + val.init_eval + "\n"
 	text += "################################################" + "\n"
 	text += "初期化条件:\n"
 	if val.spo == 'Calc':

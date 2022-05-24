@@ -443,11 +443,11 @@ def script_content():
 	if val.base_name == "Rx" or val.base_name == "Ry" or val.base_name == "Rz":
 		script += 'N = ' + str(val.n_bonds) + '\n'
 		script += 'bond = ' + str(val.l_bond) + '\n'
-		script += 'R1 = bond*N**0.5\n'
+		script += 'R2 = (N-1)*bond**2\n'
 		script += 'C=0.1\nfrc=1.0\n\n'
 
 		script += '#set xrange [0:]\n#set yrange [0:100]\n\n'
-		script += 'f(x) = C*exp(-1.*x**2./(2.*(frc*R1)**2.))/(2.*pi*(frc*R1)**2.)**(1/2)\n\n'
+		script += 'f(x) = C*exp(-1.*x**2./(2.*frc*R2))\n\n'
 		script += 'fit f(x) data via C, frc\n\n'
 		script += '#\nset label 1 sprintf("frc =%.3f", frc) at graph 0.7, 0.8\n\n'
 		#
@@ -458,9 +458,9 @@ def script_content():
 	if val.base_name == "R":
 		script += 'N = ' + str(val.n_bonds) + '\n'
 		script += 'bond = ' + str(val.l_bond) + '\n'
-		script += 'R1 = bond*N**0.5\n'
+		script += 'R2 = (N-1)*bond**2\n'
 		script += 'C=0.1\nfrc=1.0\n\n'
-		script += 'f(x) = C*4.*pi*x**2.*(3./(2.*pi*(frc*R1)**2.))**(3./2.)*exp(-3.*x**2./(2.*(frc*R1)**2.))\n'	
+		script += 'f(x) = C*4.*pi*x**2.*(3./(2.*pi*frc*R2))**(3./2.)*exp(-3.*x**2./(2.*frc*R2))\n'	
 		script += 'fit f(x) data via frc, C\n\n'
 		script += '#\nset label 1 sprintf("frc.=%.3f", frc) at graph 0.7, 0.8\n'
 		script += 'set style fill solid 0.5\nset boxwidth ' + str(val.bin_width) + '\n'

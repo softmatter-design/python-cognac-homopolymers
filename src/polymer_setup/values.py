@@ -12,9 +12,10 @@ mb_polymers = 0
 epsilon = 0.
 #
 init_fixangle = ''
-fix_angle = 0
+fix_angle = 74.0
 init_nonbond = ''
-initial_eval = ''
+init_time = []
+init_eval = ''
 #
 spo = ''
 spo_r = []

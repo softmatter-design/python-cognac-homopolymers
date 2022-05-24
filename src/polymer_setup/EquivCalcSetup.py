@@ -77,7 +77,7 @@ def initial():
 		val.file_name = "Initial_LJ_uin.udf"
 	else:
 		val.file_name = "Initial_noLJ_uin.udf"
-	val.f_eval = val.initial_eval
+	val.f_eval = val.init_eval
 	add_batch()
 	initial_random()
 	val.read_udf, val.template = val.out_udf, val.present_udf
@@ -163,7 +163,7 @@ def simulation():
 # UDF 作成条件
 #
 def initial_random():
-	time = [0.005, 10000, 100]
+	time = val.init_time
 	u = UDFManager(os.path.join(val.target_name, val.template))
 	# goto global data
 	u.jump(-1)
@@ -179,7 +179,10 @@ def initial_random():
 	# Calc_Potential_Flags
 	p = 'Simulation_Conditions.Calc_Potential_Flags.'
 	u.put(1, p + 'Bond')
-	u.put(0, p + 'Angle')
+	if val.init_fixangle == 'Fix':
+		u.put(1, p + 'Angle')
+	else:
+		u.put(0, p + 'Angle')
 	if val.init_nonbond == 'LJ':
 		u.put(1, p + 'Non_Bonding_Interchain')
 		u.put(1, p + 'Non_Bonding_1_3')
@@ -199,7 +202,10 @@ def initial_random():
 	# Set atoms
 	p = 'Initial_Structure.Generate_Method.'
 	u.put('Random', p + 'Method')
-	u.put('Fix', p + 'Random.Angle.Constraint')
+	if val.init_fixangle == 'Fix':
+		u.put('Fix', p + 'Random.Angle.Constraint')
+	else:
+		u.put('', p + 'Random.Angle.Constraint')
 	# Relaxation
 	p = 'Initial_Structure.Relaxation.'
 	u.put(1, p + 'Relaxation')
@@ -300,12 +306,19 @@ def slowpushoff():
 	for i, anglename in enumerate(val.angle_name):
 		p = 'Molecular_Attributes.Angle_Potential[].'
 		u.put(anglename, 		p + 'Name', [i])
-		u.put('Force_Cap_LJ', 	p + 'Potential_Type', [i])
-		u.put(73.0, 			p + 'theta0', [i])
-		u.put(1.0, 				p + 'Force_Cap_LJ.sigma', [i])
-		u.put(1.0, 				p + 'Force_Cap_LJ.epsilon', [i])
-		u.put(1.122462, 		p + 'Force_Cap_LJ.cutoff', [i])
-		u.put(0.8, 				p + 'Force_Cap_LJ.r_FC', [i])
+		if val.rfc >= 1.0:
+			u.put(anglename, 	p + 'Name', [i])
+			u.put('Theta2', 	p + 'Potential_Type', [i])
+			u.put(74.0, 		p + 'theta0', [i])
+			u.put(10.0, 		p + 'Theta2.K', [i])
+		else:
+			u.put('Force_Cap_LJ', 	p + 'Potential_Type', [i])
+			u.put(73.0, 			p + 'theta0', [i])
+			u.put(1.0, 				p + 'Force_Cap_LJ.sigma', [i])
+			u.put(1.0, 				p + 'Force_Cap_LJ.epsilon', [i])
+			u.put(1.122462, 		p + 'Force_Cap_LJ.cutoff', [i])
+			u.put(0.8, 				p + 'Force_Cap_LJ.r_FC', [i])
+
 	#--- Pair_Interaction[] ---
 	for i, pairname in enumerate(val.pair_name):
 		p = 'Interactions.Pair_Interaction[].'
