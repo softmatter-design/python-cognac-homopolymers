@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='homopolymer-setup',
-    version='0.1.1',
+    version='0.2.0',
     license='proprietary',
     description='Module Experiment',
 
@@ -18,7 +18,8 @@ setup(
     entry_points={
         "console_scripts": [
           'polymer_setup = polymer_setup.setup:main',
-          'evaluate_polymer = chain_evaluation.evaluate_all:evaluate'
+          'evaluate_polymer = chain_evaluation.evaluate_all:evaluate',
+          'modify_udf = polymer_setup.modify:main'
         ]
     }
 )
