@@ -13,8 +13,8 @@ import polymer_setup.values as val
 ##########################################
 # UDFファイルを設定し、バッチ処理を作成
 def rotate_pos():
-	uobj, axis = select_udf()
-	rotate_position(uobj, axis)
+	uobj, axis, outudf = select_udf()
+	rotate_position(uobj, axis, outudf)
 	return
 
 ##########################################
@@ -22,7 +22,7 @@ def rotate_pos():
 def select_udf():
 	param = sys.argv
 	if len(param) < 2:
-		print("usage: python", param[0], "Honya_out.udf direction[x or y or z]")
+		print("usage: python", param[0], "Honya_out.udf direction[x or y or z] Hetya_out.udf")
 		print("Two parameter should be addressed !")
 		exit(1)
 	elif not os.access(param[1],os.R_OK):
@@ -32,14 +32,15 @@ def select_udf():
 	target = param[1]
 	uobj = UDFManager(target)
 	axis = param[2]
-	return uobj, axis
+	outudf = param[3]
+	return uobj, axis, outudf
 
 # アトムのポジションを回転
-def rotate_position(uobj, axis):
+def rotate_position(uobj, axis, outudf):
 	#
 	uobj.eraseRecord(0, uobj.totalRecord() - 2)
 	#
-	R = rotate(axis, np.pi/2.)
+	R = rotate(axis[0], np.pi/2.)
 	uobj.jump(uobj.totalRecord() - 1)
 	pos = uobj.get('Structure.Position.mol[].atom[]')
 	for i, mol in enumerate(pos):
@@ -47,7 +48,7 @@ def rotate_position(uobj, axis):
 			tmp = list(np.array(R).dot(np.array(atom)))
 			uobj.put(tmp, 'Structure.Position.mol[].atom[]', [i, j])
 	#
-	uobj.write("rotate_" + str(axis) + '_out.udf')
+	uobj.write(outudf)
 	return
 
 def rotate(axis, deg):

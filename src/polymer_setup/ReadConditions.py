@@ -83,20 +83,25 @@ def makenewudf():
 			LAOS:{
 				LAOS:select{"Calc", "No"},
 				Calc:{
-					Cycles:int "LAOS の繰り返し数",
-					LAOS_Amp:float "LAOS の歪み",
-					LAOS_Freq:float "LAOS の周波数",
-					Evaluate:select{"Yes", "No"}"評価を行うかどうかのフラッグ"
-					} "LAOS により緩和"
+					LAOS_cond[]:
+						{
+						Cycles:int "LAOS の繰り返し数",
+						LAOS_Amp:float "LAOS の歪み",
+						LAOS_Freq:float "LAOS の周波数",
+						Evaluate:select{"Yes", "No"}"評価を行うかどうかのフラッグ"
+						} "LAOS により緩和"
+					}
 				},
 			HeatCycle:{
 				HeatCycle:select{"Calc", "No"},
 				Calc:{
-					Repeat:int "計算の繰り返し数",
-					Temperature[]:float "昇温温度を設定",
-					Time:{delta_T: double, Total_Steps: int, Output_Interval_Steps: int} "時間条件を入力",
-					Evaluate:select{"Yes", "No"}"評価を行うかどうかのフラッグ"
-					} "昇温により緩和"
+					HC_cond[]:
+						{
+						Temperature:float "昇温温度を設定",
+						Time:{delta_T: double, Total_Steps: int, Output_Interval_Steps: int} "時間条件を入力",
+						Evaluate:select{"Yes", "No"}"評価を行うかどうかのフラッグ"
+						} "昇温により緩和"
+					}
 				},
 			Final_Relaxation:{
 					Time:{delta_T: double, Total_Steps: int, Output_Interval_Steps: int} "時間条件を入力",
@@ -126,7 +131,7 @@ def makenewudf():
 	\\begin{data}
 	CalcConditions:{"cognac112",1}
 	Target:{
-		{"Homo", {20, 50}{20, 50, 20, 50, 0.1}}
+		{"Homo", {100, 50}{50, 100, 50, 100, 0.1}}
 	}
 	Initial_Structure:{
 		{"Fix",{74.000000}}
@@ -142,13 +147,13 @@ def makenewudf():
 		{1,{1.0e-02,100000,1000},"Yes"}
 	}
 	Relaxation:{
-	{"Calc",{10,0.5,0.01,"Yes"}}
-	{"Calc",{2,[2.0, 1.5, 1.0],{1.0e-02,100000,1000},"Yes"}}
+	{"Calc",{[{10,2.0,0.01,"Yes"}{10,1.0,0.1,"Yes"}]}}
+	{"Calc",{ [{2.0,{1.0e-02,100000,1000}"Yes"}{1.5,{1.0e-02,100000,1000}"Yes"}]}}
 	{{1.0e-02,100000,1000},"Yes"}
 	}
 	SimulationCond:{
-		{4,{1.0e-02,1000000,10000},"Yes"}
-		{"Calc",{5,{1.0e-02,1000000,10000},"Yes"}}
+		{2,{1.0e-02,1000000,10000},"Yes"}
+		{"Calc",{2,{1.0e-02,1000000,10000},"Yes"}}
 	}
 	\end{data}
 	'''
@@ -261,18 +266,22 @@ def readconditionudf():
 	# 
 	val.laos = u.get('Relaxation.LAOS.LAOS')
 	if val.laos == 'Calc':
-		val.laos_n = u.get('Relaxation.LAOS.Calc.Cycles')
-		val.laos_amp =  u.get('Relaxation.LAOS.Calc.LAOS_Amp')
-		val.laos_freq =  u.get('Relaxation.LAOS.Calc.LAOS_Freq')
-		val.laos_time = [val.laos_period, int(val.laos_n/val.laos_freq/val.laos_period), int(val.laos_n/val.laos_freq/val.laos_period/100)]
-		val.laos_eval = u.get('Relaxation.LAOS.Calc.Evaluate')
+		val.laos_cond = u.get('Relaxation.LAOS.Calc.LAOS_cond[]')
+		# val.laos_step = len(u.get('Relaxation.LAOS.Calc.LAOS_cond[]'))
+		# for 
+		# 	val.laos_n = u.get('Relaxation.LAOS.Calc.Cycles')
+		# 	val.laos_amp =  u.get('Relaxation.LAOS.Calc.LAOS_Amp')
+		# 	val.laos_freq =  u.get('Relaxation.LAOS.Calc.LAOS_Freq')
+		# 	val.laos_time = [val.laos_period, int(val.laos_n/val.laos_freq/val.laos_period), int(val.laos_n/val.laos_freq/val.laos_period/100)]
+		# 	val.laos_eval = u.get('Relaxation.LAOS.Calc.Evaluate')
 	#
 	val.heat = u.get('Relaxation.HeatCycle.HeatCycle')
 	if val.heat == 'Calc':
-		val.heat_repeat = u.get('Relaxation.HeatCycle.Calc.Repeat')
-		val.heat_temp = u.get('Relaxation.HeatCycle.Calc.Temperature[]')
-		val.heat_time = u.get('Relaxation.HeatCycle.Calc.Time')
-		val.heat_eval = u.get('Relaxation.HeatCycle.Calc.Evaluate')
+		val.heat_cond = u.get('Relaxation.HeatCycle.Calc.HC_cond[]')
+		# val.heat_repeat = u.get('Relaxation.HeatCycle.Calc.Repeat')
+		# val.heat_temp = u.get('Relaxation.HeatCycle.Calc.Temperature[]')
+		# val.heat_time = u.get('Relaxation.HeatCycle.Calc.Time')
+		# val.heat_eval = u.get('Relaxation.HeatCycle.Calc.Evaluate')
 	#
 	val.final_time = u.get('Relaxation.Final_Relaxation.Time')
 	val.final_eval = u.get('Relaxation.Final_Relaxation.Evaluate')
@@ -348,20 +357,24 @@ def init_calc():
 	if val.laos == 'Calc':
 		text += "################################################" + "\n"
 		text += "緩和条件:\n"
-		text += "LAOS 回数:\t\t\t\t" + str(val.laos_n) + "\n"
-		text += "最大ひずみ:\t\t\t\t" + str(val.laos_amp) + "\n"
-		text += "周波数:\t\t\t\t\t" + str(val.laos_freq) + "\n"
-		text += "LAOS 計算の時間条件:\t" + str(val.laos_time) + "\n"
-		text += "シミュレーション後の評価:\t\t" + val.laos_eval + "\n"
+		for i, data in enumerate(val.laos_cond):
+			val.laos_time.append([val.laos_period, int(data[0]/data[2]/val.laos_period), int(data[0]/data[2]/val.laos_period/100)])
+			text += 'LAOS # ' + str(i) + '\n'
+			text += "LAOS 回数:\t\t\t\t" + str(data[0]) + "\n"
+			text += "最大ひずみ:\t\t\t\t" + str(data[1]) + "\n"
+			text += "周波数:\t\t\t\t\t" + str(data[2]) + "\n"
+			text += "LAOS 計算の時間条件:\t" + str(val.laos_time[i]) + "\n"
+			text += "シミュレーション後の評価:\t\t" + data[3] + "\n"
+		text += "##\n"
 	if val.laos == 'No' and val.heat == 'Calc':
 		text += "################################################" + "\n"
 		text += "緩和条件:\n"
 	if val.heat == 'Calc':
-		text += "##\n"
-		text += "昇温緩和の繰り返し:\t\t\t" + str(val.heat_repeat) + "\n"
-		text += "昇温緩和の温度条件:\t\t" + str(val.heat_temp) + "\n"
-		text += "昇温緩和の時間条件:\t" + str(val.heat_time) + "\n"
-		text += "シミュレーション後の評価:\t\t" + val.heat_eval + "\n"
+		for i, data in enumerate(val.heat_cond):
+			text += "昇温緩和 # " + str(i) + '\n'
+			text += "昇温温度:\t\t\t" + str(data[0]) + "\n"
+			text += "昇温緩和の時間条件:\t" + str(data[1]) + "\n"
+			text += "シミュレーション後の評価:\t\t" + data[2] + "\n"
 	text += "##\n"
 	text += "最終緩和の時間条件:\t" + str(val.final_time) + "\n"
 	text += "シミュレーション後の評価:\t\t" + val.final_eval + "\n"

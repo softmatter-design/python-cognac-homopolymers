@@ -44,6 +44,10 @@ def add_batch():
 		val.batch += val.f_eval_py + ' ' + val.out_udf + '\n'
 	return
 
+def rotate_bat():
+	val.batch += 'modify_udf ' + val.read_udf + ' ' + val.rotate + ' ' + val.laos_read + '\n'
+	return
+
 def write_batch():
 	f_batch = os.path.join(val.target_name, '_Calc_all.bat')
 	with open(f_batch, 'w') as f:
@@ -108,25 +112,35 @@ def preTreatment():
 def relaxation():
 	if val.laos == "Calc":
 		# LAOS により構造緩和
-		val.title = "Calculating-Relax_LAOS"
-		val.file_name = 'Relax_LAOS_uin.udf'
-		val.f_eval = val.laos_eval
-		add_batch()
-		#
-		laos()
-		val.read_udf, val.template = val.out_udf, val.present_udf
+		for i, cond in enumerate(val.laos_cond):
+			val.laos_amp = cond[1]
+			val.laos_freq = cond[2]
+			time = val.laos_time[i]
+			val.laos_eval = cond[3]
+			for axis in ['x', 'y', 'z']:
+				val.rotate = axis + str(i)
+				val.laos_read = "rotate_" + val.rotate + '_out.udf'
+				rotate_bat()
+				val.title = "Calculating-Relax_LAOS # " + val.rotate
+				val.file_name = 'Relax_LAOS_' + val.rotate + '_uin.udf'
+				val.read_udf = val.laos_read
+				val.f_eval = val.laos_eval
+				add_batch()
+				#
+				laos(time)
+				val.read_udf, val.template = val.out_udf, val.present_udf
 			
 	if val.heat == "Calc":
 		# 加温することにより構造緩和
-		for i in range(val.heat_repeat):
-			for val.temp in val.heat_temp:
-				val.title = "Calculating-Relax_Heat" + str(i+1) + '_in_' + str(val.heat_repeat) + '_Temp_' + str(val.temp).replace('.', '_')
-				val.file_name = 'Relax_Temp_' + str(val.temp).replace('.', '_') + '_rep_' + str(i+1) + "_uin.udf"
-				val.f_eval = val.heat_eval
-				add_batch()
-				#
-				heat()
-				val.read_udf, val.template = val.out_udf, val.present_udf
+		for cond in val.heat_cond:
+			val.title = "Calculating-Relax_Heat" + '_Temp_' + str(cond[0]).replace('.', '_')
+			val.file_name = 'Relax_Temp_' + str(cond[0]).replace('.', '_') + "_uin.udf"
+			time = cond[1]
+			val.f_eval = cond[2]
+			add_batch()
+			#
+			heat(time)
+			val.read_udf, val.template = val.out_udf, val.present_udf
 
 	# 放置することにより緩和
 	val.title = "Calculating-Relax"
@@ -402,8 +416,7 @@ def kg_setup():
 	return
 
 # LAOS による緩和
-def laos():
-	time = val.laos_time
+def laos(time):
 	u = UDFManager(os.path.join(val.target_name, val.template))
 	# goto global data
 	u.jump(-1)
@@ -431,8 +444,7 @@ def laos():
 	return
 
 # 加温による緩和
-def heat():
-	time = val.heat_time
+def heat(time):
 	u = UDFManager(os.path.join(val.target_name, val.template))
 	# goto global data
 	u.jump(-1)

@@ -27,19 +27,18 @@ kg_time = []
 kg_eval = 1
 #
 laos = ''
-laos_repeat = 1
-laos_n = 0.
-laos_amp = 1.
-laos_freq = 0.1
+laos_cond = []
 laos_period = 0.01
 laos_time = []
-laos_eval = 0
+# laos_n = 0.
+
 #
 heat = ''
-heat_repeat = 1
-heat_temp = 1.
-heat_time = []
-heat_eval = 1
+heat_cond = []
+# heat_repeat = 1
+# heat_temp = 1.
+# heat_time = []
+# heat_eval = 1
 #
 final_time = []
 final_eval = 1
@@ -85,5 +84,11 @@ out_udf = ''
 read_udf = ''
 
 rfc = 0.
+
+rotate = ''
+laos_read = ''
+laos_amp = 1.
+laos_freq = 0.1
+laos_eval = 0
 
 temp = 1.
