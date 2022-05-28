@@ -57,9 +57,9 @@ def evaluate():
 		read_chain2(rec)
 	# 鎖に沿ったセグメント間距離の平均を計算
 	calc_cn()
-	# #
-	# if val.target.split('_')[0] == 'GK':
-	# 	calc_gk()
+	#
+	if val.target.split('_')[0] == 'GK':
+		calc_gk()
 	return
 
 def read_chain2(rec):
@@ -81,9 +81,6 @@ def read_chain2(rec):
 				e2e_vec = np.array(end2) - np.array(end1)
 				e2e_dist = np.linalg.norm(np.array(e2e_vec))
 				
-				
-
-
 				r2 = e2e_dist**2
 				r2_ij[step].append(r2)
 				if step == 1:
@@ -94,6 +91,8 @@ def read_chain2(rec):
 					val.Rz_list.append(e2e_vec[2])
 					#
 					val.R_list.append(e2e_dist)
+
+		
 
 
 
@@ -260,6 +259,30 @@ def bound_setup():
 
 
 
+
+
+
+##############################
+# 
+def calc_sq():
+	unitq = 2.*np.pi/systemsize
+	for i in range(int(systemsize)+1):
+		for ri in list_r:
+			uvec = uvec(n)
+			for uvec_i in uvec:
+				qvec = unitq*i*uvec_i
+
+	return
+
+def uvec(n):
+	uvec = []
+	for i in range(n):
+		z = 2.*np.random.rand() - 1.
+		radT = np.radians(360.*np.random.rand())
+		x = np.sqrt(1-z**2)*np.cos(radT)
+		y = np.sqrt(1-z**2)*np.sin(radT)
+		uvec.append([x, y, z])
+	return uvec
 
 
 
