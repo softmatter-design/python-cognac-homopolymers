@@ -91,8 +91,8 @@ def read_chain2(rec):
 					val.Rz_list.append(e2e_vec[2])
 					#
 					val.R_list.append(e2e_dist)
-
-		
+		#
+		calc_sq(chain)
 
 
 
@@ -264,7 +264,7 @@ def bound_setup():
 
 ##############################
 # 
-def calc_sq():
+def calc_sq(chain):
 	unitq = 2.*np.pi/systemsize
 	for i in range(int(systemsize)+1):
 		for ri in list_r:
