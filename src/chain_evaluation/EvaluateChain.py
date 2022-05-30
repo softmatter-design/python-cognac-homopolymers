@@ -52,9 +52,13 @@ def select_udf():
 ###############################################################################
 def evaluate():
 	rec_size = val.uobj.totalRecord()
+	sq = []
 	for rec in range(1, rec_size):
 		print("Reading Rec=", rec, '/', rec_size - 1)
-		read_chain2(rec)
+		sq_rec = read_chain2(rec)
+		sq.append(sq_rec)
+		sq_ar = np.array(sq)
+		print('tmp_Sq', np.average(sq_ar, axis = 0))
 	# 鎖に沿ったセグメント間距離の平均を計算
 	calc_cn()
 	#
@@ -64,6 +68,7 @@ def evaluate():
 
 def read_chain2(rec):
 	val.uobj.jump(rec)
+	val.systemsize = val.uobj.get('Structure.Unit_Cell.Cell_Size.a')
 	# bound_setup()
 	# CU.setCell(tuple(val.uobj.get("Structure.Unit_Cell.Cell_Size")))
 	ba = CognacBasicAnalysis(val.target, rec)
@@ -92,7 +97,8 @@ def read_chain2(rec):
 					#
 					val.R_list.append(e2e_dist)
 		#
-		calc_sq(chain)
+
+	sq_rec = calc_sq(mols)
 
 
 
@@ -140,7 +146,7 @@ def read_chain2(rec):
 	val.angle_list.extend(list(tmp[~np.isnan(tmp)]))
 
 
-	return
+	return sq_rec
 
 
 
@@ -264,17 +270,30 @@ def bound_setup():
 
 ##############################
 # 
-def calc_sq(chain):
-	unitq = 2.*np.pi/systemsize
-	for i in range(int(systemsize)+1):
-		for ri in list_r:
-			uvec = uvec(n)
-			for uvec_i in uvec:
-				qvec = unitq*i*uvec_i
+def calc_sq(mols):
+	n = 20
+	unitq = 2.*np.pi/val.systemsize
+	qsize = int(val.systemsize) + 1
+	sq = [[] for i in range(qsize*5)]
+	for i, data in enumerate(sq):
+		count = 0
+		tmpcos = 0
+		tmpsin = 0
+		for chain in mols:
+			for ri in chain:
+				uvec = randvec(n)
+				
+				for uvec_i in uvec:
+					qvec = unitq*(i+1)*np.array(uvec_i)
+					vecdot = np.dot(np.array(ri), qvec)
+					tmpcos += np.cos(vecdot)
+					tmpsin += np.sin(vecdot)
+					count += 1
+					data.append((tmpcos**2. + tmpsin**2.)/count)
+	sq_rec = np.average(sq, axis = 1)
+	return sq_rec
 
-	return
-
-def uvec(n):
+def randvec(n):
 	uvec = []
 	for i in range(n):
 		z = 2.*np.random.rand() - 1.

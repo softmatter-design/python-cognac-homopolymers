@@ -7,7 +7,7 @@ n_bonds = 0
 l_bond= 0.97
 
 # [val.n_seg, val.l_bond, val.cn, val.func, val.nu, val.nw_type]
-
+systemsize = 0.
 chain_list = []
 
 bond_list = []
@@ -25,6 +25,7 @@ cn_part = []
 #
 base_name = ''
 target_dir = ''
+
 data_list = []
 n_bins = 0
 norm = 1
