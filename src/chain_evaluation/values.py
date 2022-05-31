@@ -17,6 +17,10 @@ Ry_list = []
 Rz_list = []
 R_list = []
 #
+q_list = []
+sq_step = []
+sq_list = []
+#
 xp_list = []
 gr_list = []
 cn_list = []

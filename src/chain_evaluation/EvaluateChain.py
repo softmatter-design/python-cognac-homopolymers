@@ -3,6 +3,7 @@
 ################################################################################
 # Import Modules
 ################################################################################
+import enum
 import os
 import sys
 import math
@@ -52,15 +53,13 @@ def select_udf():
 ###############################################################################
 def evaluate():
 	rec_size = val.uobj.totalRecord()
-	sq = []
 	for rec in range(1, rec_size):
 		print("Reading Rec=", rec, '/', rec_size - 1)
-		sq_rec = read_chain2(rec)
-		sq.append(sq_rec)
-		sq_ar = np.array(sq)
-		print('tmp_Sq', np.average(sq_ar, axis = 0))
+		read_chain2(rec)
 	# 鎖に沿ったセグメント間距離の平均を計算
 	calc_cn()
+	#
+	calc_sq()
 	#
 	if val.target.split('_')[0] == 'GK':
 		calc_gk()
@@ -98,7 +97,7 @@ def read_chain2(rec):
 					val.R_list.append(e2e_dist)
 		#
 
-	sq_rec = calc_sq(mols)
+	step_sq(mols)
 
 
 
@@ -146,7 +145,7 @@ def read_chain2(rec):
 	val.angle_list.extend(list(tmp[~np.isnan(tmp)]))
 
 
-	return sq_rec
+	return
 
 
 
@@ -242,39 +241,17 @@ def read_chain(rec):
 	val.angle_list.extend(list(tmp[~np.isnan(tmp)]))
 	return
 
-# 周期境界条件の設定
-def bound_setup():
-	axis = val.uobj.get("Simulation_Conditions.Boundary_Conditions")
-	boundarylist = [0,0,0]
-	#
-	for i in range(0,3):
-		if axis[i] == "NONE" :
-			boundarylist[i] = 0
-		elif axis[i] == "PERIODIC" :
-			boundarylist[i] = 1
-		elif axis[i] == "REFLECTIVE1" :
-			boundarylist[i] = 2
-		elif axis[i] == "REFLECTIVE2" :
-			boundarylist[i] = 3
-	CU.setBoundary(tuple(boundarylist))
-	return
-
-
-
-
-
-
-
 
 
 
 ##############################
 # 
-def calc_sq(mols):
+def step_sq(mols):
 	n = 20
 	unitq = 2.*np.pi/val.systemsize
-	qsize = int(val.systemsize) + 1
-	sq = [[] for i in range(qsize*5)]
+	qsize = int(val.systemsize)
+	val.q_list = [unitq + unitq*i/5 for i in range(qsize*5)]
+	sq = [[] for i in range(len(val.q_list))]
 	for i, data in enumerate(sq):
 		count = 0
 		tmpcos = 0
@@ -284,14 +261,14 @@ def calc_sq(mols):
 				uvec = randvec(n)
 				
 				for uvec_i in uvec:
-					qvec = unitq*(i+1)*np.array(uvec_i)
+					qvec = val.q_list[i]*np.array(uvec_i)
 					vecdot = np.dot(np.array(ri), qvec)
 					tmpcos += np.cos(vecdot)
 					tmpsin += np.sin(vecdot)
 					count += 1
-					data.append((tmpcos**2. + tmpsin**2.)/count)
-	sq_rec = np.average(sq, axis = 1)
-	return sq_rec
+					data.append((tmpcos**2 + tmpsin**2)/count)
+	val.sq_step.append(np.average(sq, axis = 1))
+	return
 
 def randvec(n):
 	uvec = []
@@ -304,9 +281,11 @@ def randvec(n):
 	return uvec
 
 
-
-
-
+def calc_sq():
+	tmp_sq = np.average(np.array(val.sq_step), axis = 0)
+	for i, q in enumerate(val.q_list):
+		val.sq_list.append([q, tmp_sq[i]])
+	return
 
 
 
@@ -405,7 +384,9 @@ def make_output():
 	multi_list = [
 			["CN", val.cn_list, ['|i-j|', 'C_{|i-j|}']],
 			["CN_part", val.cn_part, ['|i-j|', 'C_{|i-j|}']],
-			["CN_ave", val.cn_ave, ['|i-j|', 'C_{|i-j|}']]
+			["CN_ave", val.cn_ave, ['|i-j|', 'C_{|i-j|}']],
+			["Sq", val.sq_list, ['q', 'S(q)']],
+			["Guinier", val.sq_list, ['q2', 'ln S(q)']]
 			]
 			# ["gr", val.gr_list, ['Distance', 'g(r)']],
 	for cond in multi_list:
@@ -549,7 +530,7 @@ def write_multi_data():
 	os.makedirs(val.target_dir, exist_ok=True)
 	with open(os.path.join(val.target_dir, val.f_dat), 'w') as f:
 		f.write("# data:\n")
-		if val.base_name == 'CN_ave' or val.base_name == 'Corr_stress' or val.base_name == 'Corr_stress_semi' or val.base_name == 'Corr_stress_mod' or val.base_name == 'Corr_stress_all':
+		if val.base_name == 'CN_ave' or val.base_name == 'Corr_stress' or val.base_name == 'Corr_stress_semi' or val.base_name == 'Corr_stress_mod' or val.base_name == 'Corr_stress_all' or val.base_name == 'Sq':
 			for line in val.data_list:
 				for data in line:
 					f.write(str(data) + '\t')
@@ -625,6 +606,11 @@ def multi_script_content():
 		script += 'data u 1:5 w l ti "zx", \\\n'
 		script += 'data u 1:6 w l ti "xx-yy", \\\n'
 		script += 'data u 1:7 w l ti "yy-zz"'
+	elif val.base_name == 'Sq':
+		script += 'plot data u 1:2 w l ti "S(q)"
+	elif val.base_name == 'Guinier':
+		script += 'set logscale y \n\nset format y "10^{%L}"\n\n'
+		script += 'plot data u 1:($2**2) w l ti "G_t", \\\n'
 	else:
 		script += 'plot '
 		for i in range(repeat):
