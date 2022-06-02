@@ -59,8 +59,6 @@ def evaluate():
 	# 鎖に沿ったセグメント間距離の平均を計算
 	calc_cn()
 	#
-	calc_sq()
-	#
 	if val.target.split('_')[0] == 'GK':
 		calc_gk()
 	return
@@ -96,8 +94,6 @@ def read_chain2(rec):
 					#
 					val.R_list.append(e2e_dist)
 		#
-
-	step_sq(mols)
 
 
 
@@ -166,80 +162,80 @@ def read_chain2(rec):
 
 
 # ポリマー鎖関連の特性情報
-def read_chain(rec):
-	# 初期化
-	bound_setup()
-	val.n_bonds = len(val.chain_list[0][1])
-	val.uobj.jump(rec)
-	CU.setCell(tuple(val.uobj.get("Structure.Unit_Cell.Cell_Size")))
-	# ステップの数に対応した空リストを作成
-	r2_ij = [[] for i in range(len(val.chain_list[0][1]))]
-	xp = [[] for i in range(val.n_bonds)]
-	# 
-	ba = CognacBasicAnalysis(val.target, rec)
-	for chain in val.chain_list:
-		mol = chain[0]
+# def read_chain(rec):
+# 	# 初期化
+# 	bound_setup()
+# 	val.n_bonds = len(val.chain_list[0][1])
+# 	val.uobj.jump(rec)
+# 	CU.setCell(tuple(val.uobj.get("Structure.Unit_Cell.Cell_Size")))
+# 	# ステップの数に対応した空リストを作成
+# 	r2_ij = [[] for i in range(len(val.chain_list[0][1]))]
+# 	xp = [[] for i in range(val.n_bonds)]
+# 	# 
+# 	ba = CognacBasicAnalysis(val.target, rec)
+# 	for chain in val.chain_list:
+# 		mol = chain[0]
 		
-		atom = val.uobj.get("Set_of_Molecules.molecule[].atom[]", [mol, chain[1][2]])[1]
-		#		
-		for step in range(1, val.n_bonds):
-			for start in range(val.n_bonds - step):
-				end1 = tuple(val.uobj.get("Structure.Position.mol[].atom[]", [mol, chain[1][start]]))
-				end2 = tuple(val.uobj.get("Structure.Position.mol[].atom[]", [mol, chain[1][start + step]]))
-				e2e_vec = CU.distanceWithBoundary(end1, end2)
-				e2e_dist = np.linalg.norm(np.array(e2e_vec))
-				r2 = e2e_dist**2
-				r2_ij[step].append(r2)
-				if step == 1:
-					val.bond_list.append(e2e_dist)
-				if step == val.n_bonds -1:
-					val.Rx_list.append(e2e_vec[0])
-					val.Ry_list.append(e2e_vec[1])
-					val.Rz_list.append(e2e_vec[2])
-					#
-					val.R_list.append(e2e_dist)
-					# r2_list.append(r2)
-		# gr
-		cg = CognacGeometryAnalysis(val.target, rec)
-		val.gr_list.append(cg.gr([atom]))
-		# xp
-		pos = []
-		for i in range(val.n_bonds):
-			segment = np.array(val.uobj.get("Structure.Position.mol[].atom[]", [mol, chain[1][i]]))
-			pos.append(segment)
-		print(pos)
-		for p in range(val.n_bonds):
-			tmp = np.zeros(3)
-			end0 = np.array(val.uobj.get("Structure.Position.mol[].atom[]", [mol, chain[1][0]]))
-			end1 = np.array(val.uobj.get("Structure.Position.mol[].atom[]", [mol, chain[1][val.n_bonds - 1]]))
-			k = np.pi*p/(val.n_bonds-1)
-			for i in range(val.n_bonds):
-				segment = np.array(val.uobj.get("Structure.Position.mol[].atom[]", [mol, chain[1][i]]))
-				tmp += segment*np.cos(k*i)
-			tmp2 = (tmp - (end0 + end1)/2.)/val.n_bonds
-			print(p)
-			print('mine', tmp/val.n_bonds)
-			print('cog', ba.Xp(pos, p))
-			xp[p].append(tmp2)
+# 		atom = val.uobj.get("Set_of_Molecules.molecule[].atom[]", [mol, chain[1][2]])[1]
+# 		#		
+# 		for step in range(1, val.n_bonds):
+# 			for start in range(val.n_bonds - step):
+# 				end1 = tuple(val.uobj.get("Structure.Position.mol[].atom[]", [mol, chain[1][start]]))
+# 				end2 = tuple(val.uobj.get("Structure.Position.mol[].atom[]", [mol, chain[1][start + step]]))
+# 				e2e_vec = CU.distanceWithBoundary(end1, end2)
+# 				e2e_dist = np.linalg.norm(np.array(e2e_vec))
+# 				r2 = e2e_dist**2
+# 				r2_ij[step].append(r2)
+# 				if step == 1:
+# 					val.bond_list.append(e2e_dist)
+# 				if step == val.n_bonds -1:
+# 					val.Rx_list.append(e2e_vec[0])
+# 					val.Ry_list.append(e2e_vec[1])
+# 					val.Rz_list.append(e2e_vec[2])
+# 					#
+# 					val.R_list.append(e2e_dist)
+# 					# r2_list.append(r2)
+# 		# gr
+# 		cg = CognacGeometryAnalysis(val.target, rec)
+# 		val.gr_list.append(cg.gr([atom]))
+# 		# xp
+# 		pos = []
+# 		for i in range(val.n_bonds):
+# 			segment = np.array(val.uobj.get("Structure.Position.mol[].atom[]", [mol, chain[1][i]]))
+# 			pos.append(segment)
+# 		print(pos)
+# 		for p in range(val.n_bonds):
+# 			tmp = np.zeros(3)
+# 			end0 = np.array(val.uobj.get("Structure.Position.mol[].atom[]", [mol, chain[1][0]]))
+# 			end1 = np.array(val.uobj.get("Structure.Position.mol[].atom[]", [mol, chain[1][val.n_bonds - 1]]))
+# 			k = np.pi*p/(val.n_bonds-1)
+# 			for i in range(val.n_bonds):
+# 				segment = np.array(val.uobj.get("Structure.Position.mol[].atom[]", [mol, chain[1][i]]))
+# 				tmp += segment*np.cos(k*i)
+# 			tmp2 = (tmp - (end0 + end1)/2.)/val.n_bonds
+# 			print(p)
+# 			print('mine', tmp/val.n_bonds)
+# 			print('cog', ba.Xp(pos, p))
+# 			xp[p].append(tmp2)
 			
 
-	xp_ave = []
-	for p in range(val.n_bonds):
-		xp_ave.append([p, np.average(np.array(xp[p]), axis = 0)])
-	val.xp_list.append(xp_ave)
-	# gr
-	cg = CognacGeometryAnalysis(val.target, rec)
-	val.gr_list.append(cg.gr([atom]))
-	# cn
-	cn = []
-	for i in range(1, len(r2_ij)):
-		cn.append([i, np.average(np.array(r2_ij[i]))/(i*val.l_bond**2)])
-	val.cn_list.append(cn)
-	# angle
-	anglename = val.uobj.get("Molecular_Attributes.Angle_Potential[].Name")
-	tmp = np.array(ba.angle(anglename[0]))
-	val.angle_list.extend(list(tmp[~np.isnan(tmp)]))
-	return
+# 	xp_ave = []
+# 	for p in range(val.n_bonds):
+# 		xp_ave.append([p, np.average(np.array(xp[p]), axis = 0)])
+# 	val.xp_list.append(xp_ave)
+# 	# gr
+# 	cg = CognacGeometryAnalysis(val.target, rec)
+# 	val.gr_list.append(cg.gr([atom]))
+# 	# cn
+# 	cn = []
+# 	for i in range(1, len(r2_ij)):
+# 		cn.append([i, np.average(np.array(r2_ij[i]))/(i*val.l_bond**2)])
+# 	val.cn_list.append(cn)
+# 	# angle
+# 	anglename = val.uobj.get("Molecular_Attributes.Angle_Potential[].Name")
+# 	tmp = np.array(ba.angle(anglename[0]))
+# 	val.angle_list.extend(list(tmp[~np.isnan(tmp)]))
+# 	return
 
 
 
@@ -384,9 +380,7 @@ def make_output():
 	multi_list = [
 			["CN", val.cn_list, ['|i-j|', 'C_{|i-j|}']],
 			["CN_part", val.cn_part, ['|i-j|', 'C_{|i-j|}']],
-			["CN_ave", val.cn_ave, ['|i-j|', 'C_{|i-j|}']],
-			["Sq", val.sq_list, ['q', 'S(q)']],
-			["Guinier", val.sq_list, ['q2', 'ln S(q)']]
+			["CN_ave", val.cn_ave, ['|i-j|', 'C_{|i-j|}']]
 			]
 			# ["gr", val.gr_list, ['Distance', 'g(r)']],
 	for cond in multi_list:
@@ -607,7 +601,7 @@ def multi_script_content():
 		script += 'data u 1:6 w l ti "xx-yy", \\\n'
 		script += 'data u 1:7 w l ti "yy-zz"'
 	elif val.base_name == 'Sq':
-		script += 'plot data u 1:2 w l ti "S(q)"
+		script += 'plot data u 1:2 w l ti "S(q)"'
 	elif val.base_name == 'Guinier':
 		script += 'set logscale y \n\nset format y "10^{%L}"\n\n'
 		script += 'plot data u 1:($2**2) w l ti "G_t", \\\n'

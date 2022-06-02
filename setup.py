@@ -19,7 +19,8 @@ setup(
         "console_scripts": [
           'polymer_setup = polymer_setup.setup:main',
           'evaluate_polymer = chain_evaluation.evaluate_all:evaluate',
-          'modify_udf = polymer_setup.modify:main'
+          'modify_udf = polymer_setup.modify:main',
+          'sqcalc = chain_evaluation.evaluate_sq:sq'
         ]
     }
 )
