@@ -70,9 +70,9 @@ def read_chain(rec):
 # 
 def step_sq(mols):
 	n = 20
+	sampling = 20
 	unitq = 2.*np.pi/val.systemsize
-	qsize = int(val.systemsize)
-	val.q_list = [unitq + unitq*i/5 for i in range(qsize*5)]
+	val.q_list = [unitq + i/sampling for i in range(sampling)]
 	sq = [[] for i in range(len(val.q_list))]
 	for i, data in enumerate(sq):
 		count = 0
@@ -226,10 +226,10 @@ def multi_script_content():
 	elif val.base_name == 'Sq':
 		script += 'plot data u 1:2 w l ti "S(q)"'
 	elif val.base_name == 'Guinier':
-		script += 'rg=3\ni0=1\ns=0.\ne=1.0\n\n'
+		script += 'rg=3\ni0=1\ns=0.1\ne=0.8\n\n'
 		script += 'f(x) = (-1*rg**2/3)*x + i0\n'
 		script += 'fit [s:e] f(x) data u ($1**2):(log($2)) via rg, i0\n\n'
-		script += 'set label 1 sprintf("Rg = %.2f \nI_0 = %.2f \nRegion: %.2f to %.2f", rg, i0, s, e) at graph 0.35, 0.75'
+		script += 'set label 1 sprintf("Rg = %.2f \\nI_0 = %.2f \\nRegion: %.2f to %.2f", rg, i0, s, e) at graph 0.35, 0.75\n\n'
 		script += 'plot [0:1] data u ($1**2):(log($2)) w l noti, \\\nf(x)'
 	else:
 		script += 'plot '
