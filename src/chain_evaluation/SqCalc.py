@@ -51,7 +51,7 @@ def select_udf():
 ###############################################################################
 def evaluate():
 	rec_size = val.uobj.totalRecord()
-	for rec in range(1, rec_size):
+	for rec in range(1, 11):#rec_size):
 		print("Reading Rec=", rec, '/', rec_size - 1)
 		read_chain(rec)
 	#
@@ -69,10 +69,10 @@ def read_chain(rec):
 ##############################
 # 
 def step_sq(mols):
-	n = 20
-	sampling = 20
+	n = 40
+	sampling = 100
 	unitq = 2.*np.pi/val.systemsize
-	val.q_list = [unitq + i/sampling for i in range(sampling)]
+	val.q_list = [unitq + (1.0-unitq)*i/sampling for i in range(sampling)]
 	sq = [[] for i in range(len(val.q_list))]
 	for i, data in enumerate(sq):
 		count = 0
@@ -146,17 +146,17 @@ def make_multi(cond_list):
 def write_multi_data():
 	os.makedirs(val.target_dir, exist_ok=True)
 	with open(os.path.join(val.target_dir, val.f_dat), 'w') as f:
-		f.write("# data:\n")
-		if val.base_name == 'Sq' or val.base_name == 'Guinier':
+		if val.base_name == 'Sq':
+			f.write("# q\tSq\n")
 			for line in val.data_list:
 				for data in line:
 					f.write(str(data) + '\t')
 				f.write('\n')
-		else:
-			for i, data in enumerate(val.data_list):
-				f.write("\n\n# " + str(i) +":\n\n")
-				for line in data:
-					f.write(str(line[0]) + '\t' + str(line[1])  + '\n')
+		elif val.base_name == 'Guinier':
+			f.write("# q^2\tln Sq\n")
+			for line in val.data_list:
+				f.write(str((float(line[0]))**2) + '\t')
+				f.write(str(np.log(float(line[1]))) + '\n')
 	return
 
 # グラフを作成
@@ -226,11 +226,11 @@ def multi_script_content():
 	elif val.base_name == 'Sq':
 		script += 'plot data u 1:2 w l ti "S(q)"'
 	elif val.base_name == 'Guinier':
-		script += 'rg=3\ni0=1\ns=0.1\ne=0.8\n\n'
+		script += 'rg=3\ni0=1\ns=0.2\ne=0.6\n\n'
 		script += 'f(x) = (-1*rg**2/3)*x + i0\n'
-		script += 'fit [s:e] f(x) data u ($1**2):(log($2)) via rg, i0\n\n'
+		script += 'fit [s:e] f(x) data via rg, i0\n\n'
 		script += 'set label 1 sprintf("Rg = %.2f \\nI_0 = %.2f \\nRegion: %.2f to %.2f", rg, i0, s, e) at graph 0.35, 0.75\n\n'
-		script += 'plot [0:1] data u ($1**2):(log($2)) w l noti, \\\nf(x)'
+		script += 'plot [0:1] data w l noti, \\\nf(x)'
 	else:
 		script += 'plot '
 		for i in range(repeat):
