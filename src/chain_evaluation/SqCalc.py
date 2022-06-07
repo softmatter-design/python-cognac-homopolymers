@@ -51,7 +51,7 @@ def select_udf():
 ###############################################################################
 def evaluate():
 	rec_size = val.uobj.totalRecord()
-	for rec in range(1, 11):#rec_size):
+	for rec in range(1, rec_size):
 		print("Reading Rec=", rec, '/', rec_size - 1)
 		read_chain(rec)
 	#
