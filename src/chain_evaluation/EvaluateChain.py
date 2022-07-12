@@ -17,6 +17,7 @@ from UDFManager import UDFManager
 import CognacUtility as CU
 from CognacBasicAnalysis import *
 from CognacGeometryAnalysis import CognacGeometryAnalysis
+from CognacTrajectoryAnalysis import CognacTrajectoryAnalysis
 #
 import chain_evaluation.values as val
 ################################################################################
@@ -24,11 +25,12 @@ import chain_evaluation.values as val
 ################################################################################
 def evaluate_chain():
 	# 対象となる udf ファイルを選択
+	print("bbb")
 	select_udf()
 	# ポリマー鎖関連の特性情報を計算
 	evaluate()
 	# 計算結果を出力
-	make_output()
+	# make_output()
 	return
 
 ##########################################
@@ -52,15 +54,16 @@ def select_udf():
 # ポリマー鎖関連の特性情報を計算
 ###############################################################################
 def evaluate():
-	rec_size = val.uobj.totalRecord()
-	for rec in range(1, rec_size):
-		print("Reading Rec=", rec, '/', rec_size - 1)
-		read_chain2(rec)
-	# 鎖に沿ったセグメント間距離の平均を計算
-	calc_cn()
-	#
-	if val.target.split('_')[0] == 'GK':
-		calc_gk()
+	xp_calc()
+	# rec_size = val.uobj.totalRecord()
+	# for rec in range(1, rec_size):
+	# 	print("Reading Rec=", rec, '/', rec_size - 1)
+	# 	read_chain2(rec)
+	# # 鎖に沿ったセグメント間距離の平均を計算
+	# calc_cn()
+	# #
+	# if val.target.split('_')[0] == 'GK':
+	# 	calc_gk()
 	return
 
 def read_chain2(rec):
@@ -611,6 +614,41 @@ def multi_script_content():
 			script += 'data ind ' + str(i) + ' w l lc ' + str(i) + 'noti, \\\n'
 
 	return script
+
+
+
+
+def xp_calc():
+	traj = CognacTrajectoryAnalysis(val.target)
+	molname = "polymerA"
+
+
+	cp = traj.normalCoordinate(molname,3,"first","last")
+
+	label=['time','Cp','Cp_x','Cp_y','Cp_z']
+	ndata = len(cp)
+
+	g=[]
+	print( 'Autocorrelation of Normal coordinate of molecule : ', molname)
+	print( label[0],',',label[1],',',label[2],',',label[3],',',label[4])
+	for i in range(0,ndata):
+		print( cp[i][0],',',cp[i][1],',',cp[i][2][0],',',cp[i][2][1],',',cp[i][2][2])
+		g.append([cp[i][0],cp[i][1],cp[i][2][0],cp[i][2][1],cp[i][2][2] ])
+
+	# t = 'Cp(t) of molecule : '+ molname
+	# gnuplot.plot(data=g,labels=label, title=t,axis='row')
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
