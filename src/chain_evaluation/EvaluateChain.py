@@ -17,7 +17,7 @@ from UDFManager import UDFManager
 import CognacUtility as CU
 from CognacBasicAnalysis import *
 from CognacGeometryAnalysis import CognacGeometryAnalysis
-from CognacTrajectoryAnalysis import CognacTrajectoryAnalysis
+from chain_evaluation.XpCalc import XpCalc
 #
 import chain_evaluation.values as val
 ################################################################################
@@ -25,7 +25,6 @@ import chain_evaluation.values as val
 ################################################################################
 def evaluate_chain():
 	# 対象となる udf ファイルを選択
-	print("bbb")
 	select_udf()
 	# ポリマー鎖関連の特性情報を計算
 	evaluate()
@@ -619,11 +618,9 @@ def multi_script_content():
 
 
 def xp_calc():
-	traj = CognacTrajectoryAnalysis(val.target)
+	traj = XpCalc(val.target)
 	molname = "polymerA"
-
-
-	cp = traj.normalCoordinate(molname,3,"first","last")
+	cp = traj.normalCoordinate(molname,1,"first","last")
 
 	label=['time','Cp','Cp_x','Cp_y','Cp_z']
 	ndata = len(cp)
