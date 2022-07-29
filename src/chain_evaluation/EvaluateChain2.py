@@ -23,12 +23,12 @@ import chain_evaluation.values as val
 ################################################################################
 # MAIN
 ################################################################################
-def evaluate_chain():
+def evaluate():
 	print('EEEE')
 	# 対象となる udf ファイルを選択
 	select_udf()
 	# ポリマー鎖関連の特性情報を計算
-	evaluate()
+	evaluatexp()
 	# 計算結果を出力
 	# make_output()
 	return
@@ -53,7 +53,7 @@ def select_udf():
 ###############################################################################
 # ポリマー鎖関連の特性情報を計算
 ###############################################################################
-def evaluate():
+def evaluatexp():
 	xp_calc()
 	# rec_size = val.uobj.totalRecord()
 	# for rec in range(1, rec_size):
