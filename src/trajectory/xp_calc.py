@@ -4,7 +4,6 @@
 import trajectory
 ################################
 def main():
-    print("OKKKKKKKK")
     trajectory.calc_xp()
     return
 

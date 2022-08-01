@@ -24,17 +24,17 @@ import chain_evaluation.values as val
 # MAIN
 ################################################################################
 def calc_xp():
-	print('DDD')
 	# 対象となる udf ファイルを選択
 	select_udf()
+	#
+	evaluate_xp()
 	return
 
 def evaluate():
-	print('EEEE')
 	# 対象となる udf ファイルを選択
 	select_udf()
 	# ポリマー鎖関連の特性情報を計算
-	evaluatexp()
+	evaluate_xp()
 	# 計算結果を出力
 	# make_output()
 	return
@@ -59,7 +59,7 @@ def select_udf():
 ###############################################################################
 # ポリマー鎖関連の特性情報を計算
 ###############################################################################
-def evaluatexp():
+def evaluate_xp():
 	xp_calc()
 	# rec_size = val.uobj.totalRecord()
 	# for rec in range(1, rec_size):
@@ -71,6 +71,24 @@ def evaluatexp():
 	# if val.target.split('_')[0] == 'GK':
 	# 	calc_gk()
 	return
+
+def xp_calc():
+	traj = XpCalc(val.target)
+	molname = "polymerA"
+	cp = traj.normalCoordinate(molname,1,"first","last")
+
+	label=['time','Cp','Cp_x','Cp_y','Cp_z']
+	ndata = len(cp)
+
+	g=[]
+	print( 'Autocorrelation of Normal coordinate of molecule : ', molname)
+	print( label[0],',',label[1],',',label[2],',',label[3],',',label[4])
+	for i in range(0,ndata):
+		print( cp[i][0],',',cp[i][1],',',cp[i][2][0],',',cp[i][2][1],',',cp[i][2][2])
+		g.append([cp[i][0],cp[i][1],cp[i][2][0],cp[i][2][1],cp[i][2][2] ])
+
+	# t = 'Cp(t) of molecule : '+ molname
+	# gnuplot.plot(data=g,labels=label, title=t,axis='row')
 
 def read_chain2(rec):
 	val.uobj.jump(rec)
@@ -105,39 +123,6 @@ def read_chain2(rec):
 		#
 
 
-
-	# 	# gr
-	# 	cg = CognacGeometryAnalysis(val.target, rec)
-	# 	val.gr_list.append(cg.gr([atom]))
-	# 	# xp
-	# 	pos = []
-	# 	for i in range(val.n_bonds):
-	# 		segment = np.array(val.uobj.get("Structure.Position.mol[].atom[]", [mol, chain[1][i]]))
-	# 		pos.append(segment)
-	# 	print(pos)
-	# 	for p in range(val.n_bonds):
-	# 		tmp = np.zeros(3)
-	# 		end0 = np.array(val.uobj.get("Structure.Position.mol[].atom[]", [mol, chain[1][0]]))
-	# 		end1 = np.array(val.uobj.get("Structure.Position.mol[].atom[]", [mol, chain[1][val.n_bonds - 1]]))
-	# 		k = np.pi*p/(val.n_bonds-1)
-	# 		for i in range(val.n_bonds):
-	# 			segment = np.array(val.uobj.get("Structure.Position.mol[].atom[]", [mol, chain[1][i]]))
-	# 			tmp += segment*np.cos(k*i)
-	# 		tmp2 = (tmp - (end0 + end1)/2.)/val.n_bonds
-	# 		print(p)
-	# 		print('mine', tmp/val.n_bonds)
-	# 		print('cog', ba.Xp(pos, p))
-	# 		xp[p].append(tmp2)
-			
-
-	# xp_ave = []
-	# for p in range(val.n_bonds):
-	# 	xp_ave.append([p, np.average(np.array(xp[p]), axis = 0)])
-	# val.xp_list.append(xp_ave)
-	# # gr
-	# cg = CognacGeometryAnalysis(val.target, rec)
-	# val.gr_list.append(cg.gr([atom]))
-
 	# cn
 	cn = []
 	val.l_bond = np.average(np.array(val.bond_list))
@@ -151,211 +136,6 @@ def read_chain2(rec):
 
 
 	return
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# ポリマー鎖関連の特性情報
-# def read_chain(rec):
-# 	# 初期化
-# 	bound_setup()
-# 	val.n_bonds = len(val.chain_list[0][1])
-# 	val.uobj.jump(rec)
-# 	CU.setCell(tuple(val.uobj.get("Structure.Unit_Cell.Cell_Size")))
-# 	# ステップの数に対応した空リストを作成
-# 	r2_ij = [[] for i in range(len(val.chain_list[0][1]))]
-# 	xp = [[] for i in range(val.n_bonds)]
-# 	# 
-# 	ba = CognacBasicAnalysis(val.target, rec)
-# 	for chain in val.chain_list:
-# 		mol = chain[0]
-		
-# 		atom = val.uobj.get("Set_of_Molecules.molecule[].atom[]", [mol, chain[1][2]])[1]
-# 		#		
-# 		for step in range(1, val.n_bonds):
-# 			for start in range(val.n_bonds - step):
-# 				end1 = tuple(val.uobj.get("Structure.Position.mol[].atom[]", [mol, chain[1][start]]))
-# 				end2 = tuple(val.uobj.get("Structure.Position.mol[].atom[]", [mol, chain[1][start + step]]))
-# 				e2e_vec = CU.distanceWithBoundary(end1, end2)
-# 				e2e_dist = np.linalg.norm(np.array(e2e_vec))
-# 				r2 = e2e_dist**2
-# 				r2_ij[step].append(r2)
-# 				if step == 1:
-# 					val.bond_list.append(e2e_dist)
-# 				if step == val.n_bonds -1:
-# 					val.Rx_list.append(e2e_vec[0])
-# 					val.Ry_list.append(e2e_vec[1])
-# 					val.Rz_list.append(e2e_vec[2])
-# 					#
-# 					val.R_list.append(e2e_dist)
-# 					# r2_list.append(r2)
-# 		# gr
-# 		cg = CognacGeometryAnalysis(val.target, rec)
-# 		val.gr_list.append(cg.gr([atom]))
-# 		# xp
-# 		pos = []
-# 		for i in range(val.n_bonds):
-# 			segment = np.array(val.uobj.get("Structure.Position.mol[].atom[]", [mol, chain[1][i]]))
-# 			pos.append(segment)
-# 		print(pos)
-# 		for p in range(val.n_bonds):
-# 			tmp = np.zeros(3)
-# 			end0 = np.array(val.uobj.get("Structure.Position.mol[].atom[]", [mol, chain[1][0]]))
-# 			end1 = np.array(val.uobj.get("Structure.Position.mol[].atom[]", [mol, chain[1][val.n_bonds - 1]]))
-# 			k = np.pi*p/(val.n_bonds-1)
-# 			for i in range(val.n_bonds):
-# 				segment = np.array(val.uobj.get("Structure.Position.mol[].atom[]", [mol, chain[1][i]]))
-# 				tmp += segment*np.cos(k*i)
-# 			tmp2 = (tmp - (end0 + end1)/2.)/val.n_bonds
-# 			print(p)
-# 			print('mine', tmp/val.n_bonds)
-# 			print('cog', ba.Xp(pos, p))
-# 			xp[p].append(tmp2)
-			
-
-# 	xp_ave = []
-# 	for p in range(val.n_bonds):
-# 		xp_ave.append([p, np.average(np.array(xp[p]), axis = 0)])
-# 	val.xp_list.append(xp_ave)
-# 	# gr
-# 	cg = CognacGeometryAnalysis(val.target, rec)
-# 	val.gr_list.append(cg.gr([atom]))
-# 	# cn
-# 	cn = []
-# 	for i in range(1, len(r2_ij)):
-# 		cn.append([i, np.average(np.array(r2_ij[i]))/(i*val.l_bond**2)])
-# 	val.cn_list.append(cn)
-# 	# angle
-# 	anglename = val.uobj.get("Molecular_Attributes.Angle_Potential[].Name")
-# 	tmp = np.array(ba.angle(anglename[0]))
-# 	val.angle_list.extend(list(tmp[~np.isnan(tmp)]))
-# 	return
-
-
-
-
-##############################
-# 
-def step_sq(mols):
-	n = 20
-	unitq = 2.*np.pi/val.systemsize
-	qsize = int(val.systemsize)
-	val.q_list = [unitq + unitq*i/5 for i in range(qsize*5)]
-	sq = [[] for i in range(len(val.q_list))]
-	for i, data in enumerate(sq):
-		count = 0
-		tmpcos = 0
-		tmpsin = 0
-		for chain in mols:
-			for ri in chain:
-				uvec = randvec(n)
-				
-				for uvec_i in uvec:
-					qvec = val.q_list[i]*np.array(uvec_i)
-					vecdot = np.dot(np.array(ri), qvec)
-					tmpcos += np.cos(vecdot)
-					tmpsin += np.sin(vecdot)
-					count += 1
-					data.append((tmpcos**2 + tmpsin**2)/count)
-	val.sq_step.append(np.average(sq, axis = 1))
-	return
-
-def randvec(n):
-	uvec = []
-	for i in range(n):
-		z = 2.*np.random.rand() - 1.
-		radT = np.radians(360.*np.random.rand())
-		x = np.sqrt(1-z**2)*np.cos(radT)
-		y = np.sqrt(1-z**2)*np.sin(radT)
-		uvec.append([x, y, z])
-	return uvec
-
-
-def calc_sq():
-	tmp_sq = np.average(np.array(val.sq_step), axis = 0)
-	for i, q in enumerate(val.q_list):
-		val.sq_list.append([q, tmp_sq[i]])
-	return
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-###################################################################
-# 鎖に沿ったセグメント間距離の平均を計算
-def calc_cn():
-	l_part = len(val.cn_list)//10
-	# データの分割
-	multi = 0
-	part_cn = []
-	tmp = []
-	for i, part in enumerate(val.cn_list):
-		if i < l_part*(multi + 1):
-			tmp.append(part)
-		else:
-			part_cn.append(tmp)
-			tmp = []
-			tmp.append(part)
-			multi += 1
-	# 各パートごとに平均
-	for part in part_cn:
-		tmp = [ [i + 1, 0] for i in range(len(val.cn_list[0]))]
-		count = 0
-		cn_part_ave = []
-		for data in part:
-			for i, el in enumerate(data):
-				tmp[i][1] += el[1]
-			count += 1
-		for data in tmp:
-			cn_part_ave.append([data[0], data[1]/count])
-		val.cn_part.append(cn_part_ave)
-	# パートごとの平均をさらに平均
-	tmp = [ [i + 1, 0] for i in range(len(val.cn_list[0]))]
-	count = 0
-	for data in val.cn_part:
-		for i, el in enumerate(data):
-			tmp[i][1] += el[1]
-		count += 1
-	for data in tmp:
-		val.cn_ave.append([data[0], data[1]/count])
-	return
-
-
-
-
-
 
 
 
@@ -624,23 +404,7 @@ def multi_script_content():
 
 
 
-def xp_calc():
-	traj = XpCalc(val.target)
-	molname = "polymerA"
-	cp = traj.normalCoordinate(molname,1,"first","last")
 
-	label=['time','Cp','Cp_x','Cp_y','Cp_z']
-	ndata = len(cp)
-
-	g=[]
-	print( 'Autocorrelation of Normal coordinate of molecule : ', molname)
-	print( label[0],',',label[1],',',label[2],',',label[3],',',label[4])
-	for i in range(0,ndata):
-		print( cp[i][0],',',cp[i][1],',',cp[i][2][0],',',cp[i][2][1],',',cp[i][2][2])
-		g.append([cp[i][0],cp[i][1],cp[i][2][0],cp[i][2][1],cp[i][2][2] ])
-
-	# t = 'Cp(t) of molecule : '+ molname
-	# gnuplot.plot(data=g,labels=label, title=t,axis='row')
 
 
 

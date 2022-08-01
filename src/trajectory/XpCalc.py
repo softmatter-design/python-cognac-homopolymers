@@ -5,6 +5,21 @@ from CognacBasicAnalysis import CognacBasicAnalysis
 class XpCalc (CognacBasicAnalysis):
     def __init__(self,udfname):
         CognacBasicAnalysis.__init__(self,udfname)
+        # # setup timeRecord[] and timeList[]
+        # startTime = 0.0        # output UDF always starts at time=0
+        # self.timeRecord = [0]
+        # self.timeList = [startTime]
+        # for i in range(0,self.totalRecord()):
+        #     self.jump(i)
+        #     time = self.get("Time")
+        #     if time == startTime:
+        #         self.timeRecord[0] = i
+        #     else:
+        #         self.timeRecord.append(i)
+        #         self.timeList.append(time - startTime)
+
+    #----- utility functions -----
+    def time(self):
         # setup timeRecord[] and timeList[]
         startTime = 0.0        # output UDF always starts at time=0
         self.timeRecord = [0]
@@ -17,8 +32,6 @@ class XpCalc (CognacBasicAnalysis):
             else:
                 self.timeRecord.append(i)
                 self.timeList.append(time - startTime)
-
-    #----- utility functions -----
 
     def _recList(self, start_record, end_record):
         '''list of records to be used for analysis
@@ -93,6 +106,7 @@ class XpCalc (CognacBasicAnalysis):
 
     def normalCoordinate(self, molname, p=1,
                                     start_record="first", end_record="last"):
+        self.time()
         molList = self._molList(molname, 'Xp')
         print(molList)
         
@@ -100,24 +114,15 @@ class XpCalc (CognacBasicAnalysis):
         print(self._recList(start_record, end_record))
         for rec in self._recList(start_record, end_record):
             self.jump(rec)
+            pos_list = tuple(self.get("Structure.Position.mol[].atom[]"))
             for m, key in molList:
-                cu.pushVector(key, self.Xp(m,p))
+                pos = np.array(pos_list[m])
+                cu.pushVector(key, self.Xp(pos,p))
 
         CpAve = cu.vectorCorrelation()
         return self._resultsList(CpAve)
 
-    def Xp(self, molIndex, p=1):
-        '''normal mode of a molecule
-
-        Args:
-            molIndex: int: specify the molecule
-            p: int: mode number (1, 2, ..., numAtoms-1)
-
-        Returns:
-            tuple (Xpx, Xpy, Xpz)
-        '''
-        pos = np.array(self.position([molIndex]))
-
+    def Xp(self, pos, p=1):
         N = len(pos)
         k = np.pi*p/N
         xp = np.zeros(3)
@@ -125,13 +130,13 @@ class XpCalc (CognacBasicAnalysis):
             xp += np.cos(k*(n+0.5))*pos[n]
         return tuple(xp/N)
 
-    def position(self, mol_atom):
-        '''position of an atom, or list of positions of atoms in a molecule
+    # def position(self, mol_atom):
+    #     '''position of an atom, or list of positions of atoms in a molecule
 
-        position([molIndex, atomIndex])
-            Returns: tuple (x,y,z): position of the atom
+    #     position([molIndex, atomIndex])
+    #         Returns: tuple (x,y,z): position of the atom
 
-        position([molIndex])
-            Returns: ([x,y,z], [x,y,z], ...): positions of atoms in the molecule
-        '''
-        return tuple(self.get("Structure.Position.mol[].atom[]", mol_atom))
+    #     position([molIndex])
+    #         Returns: ([x,y,z], [x,y,z], ...): positions of atoms in the molecule
+    #     '''
+    #     return tuple(self.get("Structure.Position.mol[].atom[]", mol_atom))
