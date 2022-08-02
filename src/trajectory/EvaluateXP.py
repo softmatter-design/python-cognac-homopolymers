@@ -3,7 +3,6 @@
 ################################################################################
 # Import Modules
 ################################################################################
-import enum
 import os
 import sys
 import math
@@ -14,12 +13,12 @@ import subprocess
 import scipy.signal as signal
 #
 from UDFManager import UDFManager
-import CognacUtility as CU
+import CognacUtility as cu
 from CognacBasicAnalysis import *
 from CognacGeometryAnalysis import CognacGeometryAnalysis
 from trajectory.XpCalc import XpCalc
 #
-import chain_evaluation.values as val
+import trajectory.variables as var
 ################################################################################
 # MAIN
 ################################################################################
@@ -27,17 +26,17 @@ def calc_xp():
 	# 対象となる udf ファイルを選択
 	select_udf()
 	#
-	evaluate_xp()
+	evaluate_xp2()
 	return
 
-def evaluate():
-	# 対象となる udf ファイルを選択
-	select_udf()
-	# ポリマー鎖関連の特性情報を計算
-	evaluate_xp()
-	# 計算結果を出力
-	# make_output()
-	return
+# def evaluate():
+# 	# 対象となる udf ファイルを選択
+# 	select_udf()
+# 	# ポリマー鎖関連の特性情報を計算
+# 	evaluate_xp()
+# 	# 計算結果を出力
+# 	# make_output()
+# 	return
 
 ##########################################
 # 対象となる udf ファイルを選択
@@ -49,28 +48,150 @@ def select_udf():
 	elif not os.access(param[1],os.R_OK):
 		print(param[1], "not exists.")
 		exit(1)
-	elif len(param) > 2:
-		val.blend_a = param[2]
-	val.target = param[1]
-	val.target_name = val.target.split('.')[0]
-	val.uobj = UDFManager(val.target)
+	var.target = param[1]
+	# var.target_name = var.target.split('.')[0]
+	var.uobj = UDFManager(var.target)
 	return
 
 ###############################################################################
 # ポリマー鎖関連の特性情報を計算
 ###############################################################################
 def evaluate_xp():
-	xp_calc()
-	# rec_size = val.uobj.totalRecord()
-	# for rec in range(1, rec_size):
-	# 	print("Reading Rec=", rec, '/', rec_size - 1)
-	# 	read_chain2(rec)
-	# # 鎖に沿ったセグメント間距離の平均を計算
-	# calc_cn()
-	# #
-	# if val.target.split('_')[0] == 'GK':
-	# 	calc_gk()
+	traj = XpCalc(var.target)
+	molname = "polymerA"
+	cp = traj.normalCoordinate(molname,1,"first","last")
+
+	label=['time','Cp','Cp_x','Cp_y','Cp_z']
+	ndata = len(cp)
+
+	g=[]
+	print( 'Autocorrelation of Normal coordinate of molecule : ', molname)
+	print( label[0],',',label[1],',',label[2],',',label[3],',',label[4])
+	for i in range(0,ndata):
+		print( cp[i][0],',',cp[i][1],',',cp[i][2][0],',',cp[i][2][1],',',cp[i][2][2])
+		g.append([cp[i][0],cp[i][1],cp[i][2][0],cp[i][2][1],cp[i][2][2] ])
+
 	return
+
+
+def evaluate_xp2():
+	molname = "polymerA"
+	cp = normalCoordinate(molname, 1)
+
+	label=['time','Cp','Cp_x','Cp_y','Cp_z']
+	ndata = len(cp)
+
+	g=[]
+	print( 'Autocorrelation of Normal coordinate of molecule : ', molname)
+	print( label[0],',',label[1],',',label[2],',',label[3],',',label[4])
+	for i in range(0,ndata):
+		print( cp[i][0],',',cp[i][1],',',cp[i][2][0],',',cp[i][2][1],',',cp[i][2][2])
+		g.append([cp[i][0],cp[i][1],cp[i][2][0],cp[i][2][1],cp[i][2][2] ])
+
+	return
+
+
+#----- utility functions -----
+def time():
+	# setup timeRecord[] and timeList[]
+	startTime = 0.0        # output UDF always starts at time=0
+	var.timeRecord = [0]
+	var.timeList = [startTime]
+	for i in range(0, var.uobj.totalRecord()):
+		var.uobj.jump(i)
+		time = var.uobj.get("Time")
+		if time == startTime:
+			var.timeRecord[0] = i
+		else:
+			var.timeRecord.append(i)
+			var.timeList.append(time - startTime)
+	return
+
+def _molList(molname, suffix=None):
+	'''list of molecules having the specifiled molname
+
+	Args:
+		molname (str): name of the molecules to be selected
+		suffix (str): suffix to be added to the 'key'
+
+	Returns:
+		list [(molIndex, key), ...]
+		where key = 'molname:molIndex:suffix'
+	'''
+	key = '{}:{}'
+	if suffix != None:
+		key += ':' + suffix
+	molList = []
+	for m in range(len(var.uobj.get('Set_of_Molecules.molecule[]'))):
+		if var.uobj.get("Set_of_Molecules.molecule[].Mol_Name",[m]) == molname:
+			molList.append((m, key.format(molname, m)))
+	if len(molList) == 0:
+		print('no molecule with Mol_Name: ' + molname)
+	return molList
+
+def _resultsList(vec):
+	'''normalize vec and create the results list
+
+	Arg:
+		vec: [ [x0,y0,z0], [x1,y1,z1], ...]
+
+	Returns:
+		list [ (t0, s0, (xn0,yn0,zn0)), (t1, s1, (xn1,yn1,zn1)), ... ]
+		where
+			ti = dt*i,
+			si = (xi+yi+zi)/S    (S = x0+y0+z0),
+			xni = xi/x0, yni = yi/y0, zni = zi/z0.
+	'''
+	S = np.sum(vec[0])
+	x0, y0, z0 = vec[0]
+	results = [ (var.timeList[i], np.sum(vec[i])/S,
+					(vec[i][0]/x0, vec[i][1]/y0, vec[i][2]/z0))
+					for i in range(len(vec)) ]
+	return results
+
+#----- public methods -----
+
+
+
+def normalCoordinate(molname, p=1):
+	time()
+	molList = _molList(molname, 'Xp')
+	print(molList)
+
+	cu.clearVectorMap()
+	
+	for rec in var.timeRecord:
+		var.uobj.jump(rec)
+		pos_list = tuple(var.uobj.get("Structure.Position.mol[].atom[]"))
+		for m, key in molList:
+			pos = np.array(pos_list[m])
+			cu.pushVector(key, Xp(pos,p))
+
+	CpAve = cu.vectorCorrelation()
+	return _resultsList(CpAve)
+
+def Xp(pos, p=1):
+	N = len(pos)
+	k = np.pi*p/N
+	xp = np.zeros(3)
+	for n in range(N):
+		xp += np.cos(k*(n+0.5))*pos[n]
+	return tuple(xp/N)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 def xp_calc():
 	traj = XpCalc(val.target)

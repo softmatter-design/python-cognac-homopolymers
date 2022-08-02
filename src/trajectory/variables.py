@@ -1,2 +1,4 @@
-udf_name = ''
-time = []
+target = ''
+uobj = ''
+timeRecord =[]
+timeList = []
