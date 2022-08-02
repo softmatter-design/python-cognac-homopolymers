@@ -67,7 +67,7 @@ def evaluate_xp():
 	g=[]
 	print( 'Autocorrelation of Normal coordinate of molecule : ', molname)
 	print( label[0],',',label[1],',',label[2],',',label[3],',',label[4])
-	for i in range(0,ndata):
+	for i in range(0, ndata):
 		print( cp[i][0],',',cp[i][1],',',cp[i][2][0],',',cp[i][2][1],',',cp[i][2][2])
 		g.append([cp[i][0],cp[i][1],cp[i][2][0],cp[i][2][1],cp[i][2][2] ])
 
@@ -84,7 +84,7 @@ def evaluate_xp2():
 	g=[]
 	print( 'Autocorrelation of Normal coordinate of molecule : ', molname)
 	print( label[0],',',label[1],',',label[2],',',label[3],',',label[4])
-	for i in range(0,ndata):
+	for i in range(0, ndata):
 		print( cp[i][0],',',cp[i][1],',',cp[i][2][0],',',cp[i][2][1],',',cp[i][2][2])
 		g.append([cp[i][0],cp[i][1],cp[i][2][0],cp[i][2][1],cp[i][2][2] ])
 
