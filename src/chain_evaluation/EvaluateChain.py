@@ -17,7 +17,7 @@ from UDFManager import UDFManager
 import CognacUtility as CU
 from CognacBasicAnalysis import *
 from CognacGeometryAnalysis import CognacGeometryAnalysis
-from chain_evaluation.XpCalc import XpCalc
+# from chain_evaluation.XpCalc import XpCalc
 #
 import chain_evaluation.values as val
 ################################################################################
@@ -30,13 +30,14 @@ def evaluate_chain():
 	# ポリマー鎖関連の特性情報を計算
 	evaluate()
 	# 計算結果を出力
-	# make_output()
+	make_output()
 	return
 
 ##########################################
 # 対象となる udf ファイルを選択
 def select_udf():
 	param = sys.argv
+	print(param[1], "not exists.")
 	if len(param) == 1:
 		print("usage: python", param[0], "Honya_out.udf")
 		exit(1)
@@ -54,16 +55,16 @@ def select_udf():
 # ポリマー鎖関連の特性情報を計算
 ###############################################################################
 def evaluate():
-	xp_calc()
-	# rec_size = val.uobj.totalRecord()
-	# for rec in range(1, rec_size):
-	# 	print("Reading Rec=", rec, '/', rec_size - 1)
-	# 	read_chain2(rec)
-	# # 鎖に沿ったセグメント間距離の平均を計算
-	# calc_cn()
-	# #
-	# if val.target.split('_')[0] == 'GK':
-	# 	calc_gk()
+	# xp_calc()
+	rec_size = val.uobj.totalRecord()
+	for rec in range(1, rec_size):
+		print("Reading Rec=", rec, '/', rec_size - 1)
+		read_chain2(rec)
+	# 鎖に沿ったセグメント間距離の平均を計算
+	calc_cn()
+	#
+	if val.target.split('_')[0] == 'GK':
+		calc_gk()
 	return
 
 def read_chain2(rec):
